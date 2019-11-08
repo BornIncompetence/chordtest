@@ -107,6 +107,7 @@ public class DFS {
 
         public FileJson() {
             this.size = (long) 0;
+            pages = new ArrayList<PagesJson>();
             creationTS = LocalDateTime.now().toString();
             readTS = "0";
             writeTS = "0";
@@ -122,6 +123,9 @@ public class DFS {
         }
         public int getNumOfPages(){
             return this.numOfPages;
+        }
+        public PagesJson getPage(int index){
+            return this.pages.get(index);
         }
         // setters
         public void setName(String newName){
@@ -306,9 +310,11 @@ public class DFS {
      * @param filename Name of the file
      */
     public void create(String fileName) throws Exception {
-        // TODO: Create the file fileName by adding a new entry to the Metadata
-        // Write Metadata
-
+        FilesJson metadata = this.readMetaData();
+        FileJson newFile = new FileJson();
+        newFile.setName(fileName);
+        metadata.addFile(newFile);
+        writeMetaData(metadata);
     }
 
     /**
@@ -317,7 +323,18 @@ public class DFS {
      * @param filename Name of the file
      */
     public void delete(String fileName) throws Exception {
-
+        FilesJson metadata = this.readMetaData();
+        metadata.removeFile(fileName);
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
+            if(metadata.getFile(i).getName().equals(fileName)){
+                for(int j = 0; j < metadata.getFile(i).getNumOfPages(); j++){
+                    Long guidOfPageJsonToDelete = metadata.getFile(i).getPage(j).getGuid();
+                    ChordMessageInterface nodeThatHostsFile = chord.locateSuccessor(guidOfPageJsonToDelete);
+                    nodeThatHostsFile.delete(guidOfPageJsonToDelete);
+                }
+            }
+        }
+        writeMetaData(metadata);
     }
 
     /**
