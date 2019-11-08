@@ -39,6 +39,15 @@ public class DFS {
         String readTS;
         String writeTS;
         int referenceCount;
+
+        public PagesJson(){
+            this.guid = (long) 0;
+            this.size = (long) 0;
+            this.createTS = "0";
+            this.readTS = "0";
+            this.writeTS = "0";
+            this.referenceCount = 0;
+        }
         public PagesJson(Long guid, Long size, String createTS, String readTS, String writeTS, int referenceCount) {
             this.guid = guid;
             this.size = size;
@@ -88,12 +97,13 @@ public class DFS {
 
     public class FileJson { //Structure for all the files that will be listed in metadata? eg imperial.mp3 or song files
         String name;
-        Long size;
+        Long size; // Total size of the file, calculated from adding each part from every node
         ArrayList<PagesJson> pages;
         String creationTS;
         String readTS;
         String writeTS;
         int numOfPages;
+        int maxPageSize; // The largest size of a page of the file
 
         public FileJson() {
             this.size = (long) 0;
@@ -101,6 +111,7 @@ public class DFS {
             readTS = "0";
             writeTS = "0";
             numOfPages = 0;
+            maxPageSize = 0;
         }
         // getters
         public String getName(){
@@ -121,6 +132,20 @@ public class DFS {
         }
         public void setNumOfPages(int newNumOfPages){
             this.numOfPages = newNumOfPages;
+        }
+        public void setReadTS(String readTS){
+            this.readTS = readTS;
+        }
+        public void setWriteTS(String writeTS){
+            this.writeTS = writeTS;
+        }
+        public void compareAndSetMaxPageSize(int newSize){
+            if(this.maxPageSize < newSize){
+                this.maxPageSize = newSize;
+            }
+        }
+        public void addNewPage(PagesJson newPageToAdd){
+            this.pages.add(newPageToAdd);
         }
     };
 
@@ -312,18 +337,24 @@ public class DFS {
      * @param data     RemoteInputStream.
      */
     public void append(String filename, RemoteInputFileStream data) throws Exception {
-        FilesJson metaDataToWriteTo = this.readMetaData();
-        for(int i = 0; i < metaDataToWriteTo.getNumOfFilesInMetadata(); i++){ //for loop to loop through each file in metadata
-            if(metaDataToWriteTo.getFile(i).getName().equals(filename)){ //found the correct file to append a page 
+        FilesJson metadata = this.readMetaData();
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){ //for loop to loop through each file in metadata
+            if(metadata.getFile(i).getName().equals(filename)){ //found the correct file to append a page 
                 //code to update the metadata of the specified file
-                //need to update readTS
-                //need to update writeTS
-                //need to update maxPageSize
-                //need to update totalSize
-                //need to update number of pages
-                //need to update size
+                metadata.getFile(i).setSize(metadata.getFile(i).getSize() + (long) data.available());
+                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
+                metadata.getFile(i).setWriteTS(LocalDateTime.now().toString());
+                metadata.getFile(i).setNumOfPages(metadata.getFile(i).getNumOfPages() + 1);
+                metadata.getFile(i).compareAndSetMaxPageSize(data.available());
+                //code to add to file to chord
+                Long guidOfNewFile = md5(filename + LocalDateTime.now().toString());
+                ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
+                nodeToHostFile.put(guidOfNewFile, data);
+                PagesJson newPageToAdd = new PagesJson(guidOfNewFile, (long) data.available(), LocalDateTime.now().toString(), 
+                                                       LocalDateTime.now().toString(), LocalDateTime.now().toString(), 0);
+                metadata.getFile(i).addNewPage(newPageToAdd);
             }
         }
+        writeMetaData(metadata); //save changes to metadata file
     }
-
 }
