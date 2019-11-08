@@ -312,7 +312,18 @@ public class DFS {
      * @param data     RemoteInputStream.
      */
     public void append(String filename, RemoteInputFileStream data) throws Exception {
-
+        FilesJson metaDataToWriteTo = this.readMetaData();
+        for(int i = 0; i < metaDataToWriteTo.getNumOfFilesInMetadata(); i++){ //for loop to loop through each file in metadata
+            if(metaDataToWriteTo.getFile(i).getName().equals(filename)){ //found the correct file to append a page 
+                //code to update the metadata of the specified file
+                //need to update readTS
+                //need to update writeTS
+                //need to update maxPageSize
+                //need to update totalSize
+                //need to update number of pages
+                //need to update size
+            }
+        }
     }
 
 }
