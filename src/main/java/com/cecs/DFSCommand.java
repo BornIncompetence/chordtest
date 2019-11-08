@@ -36,9 +36,31 @@ public final class DFSCommand {
             if (result[0].equals("ls")) {
                 dfs.lists();
             }
-
             if (result[0].equals("leave")) {
                 dfs.leave();
+            }
+            if (result[0].equals("touch")) {
+                //dfs.leave();
+            }
+            if (result[0].equals("delete")) {
+                dfs.delete(result[1]);
+            }
+            if (result[0].equals("read")) {
+                dfs.read(result[1], Integer.parseInt(result[2]));
+            }
+            if (result[0].equals("head")) {
+                //dfs.leave();
+            }
+            if (result[0].equals("tail")) {
+                //dfs.leave();
+            }
+            if (result[0].equals("append")) {
+                RemoteInputFileStream fileToAppend = new RemoteInputFileStream(result[2]);
+                dfs.append(result[1], fileToAppend);
+                System.out.println("Page added");
+            }
+            if (result[0].equals("move")) {
+                dfs.move(result[1], result[2]);
             }
             line = buffer.readLine();
         }

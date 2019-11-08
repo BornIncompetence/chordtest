@@ -4,6 +4,8 @@ import java.util.*;
 import java.nio.file.*;
 import java.math.BigInteger;
 import java.security.*;
+import java.time.LocalDateTime;
+
 import com.google.gson.Gson;
 
 /* JSON Format
@@ -30,37 +32,133 @@ import com.google.gson.Gson;
 
 public class DFS {
 
-    public class PagesJson {
+    public class PagesJson { //This might be the class that holds the pages of the music.json or users.json?
         Long guid;
         Long size;
-
-        public PagesJson() {
-
+        String createTS;
+        String readTS;
+        String writeTS;
+        int referenceCount;
+        public PagesJson(Long guid, Long size, String createTS, String readTS, String writeTS, int referenceCount) {
+            this.guid = guid;
+            this.size = size;
+            this.createTS = createTS;
+            this.readTS = readTS;
+            this.writeTS = writeTS;
+            this.referenceCount = referenceCount;
         }
         // getters
+        public Long getGuid(){
+            return this.guid;
+        }
+        public Long getSize(){
+            return this.size;
+        }
+        public String getCreateTS(){
+            return this.createTS;
+        }
+        public String getReadTS(){
+            return this.readTS;
+        }
+        public String getWriteTS(){
+            return this.writeTS;
+        }
+        public int getReferenceCount(){
+            return this.referenceCount;
+        }
+
         // setters
+        public void setGuid(Long guid){
+            this.guid = guid;
+        }
+        public void setSize(Long size){
+            this.size = size;
+        }
+        public void setCreateTS(String createTS){
+            this.createTS = createTS;
+        }
+        public void setReadTS(String readTS){
+            this.readTS = readTS;
+        }
+        public void setWriteTS(String writeTS){
+            this.writeTS = writeTS;
+        }
+
     };
 
-    public class FileJson {
+    public class FileJson { //Structure for all the files that will be listed in metadata? eg imperial.mp3 or song files
         String name;
         Long size;
         ArrayList<PagesJson> pages;
+        String creationTS;
+        String readTS;
+        String writeTS;
+        int numOfPages;
 
         public FileJson() {
-
+            this.size = (long) 0;
+            creationTS = LocalDateTime.now().toString();
+            readTS = "0";
+            writeTS = "0";
+            numOfPages = 0;
         }
         // getters
+        public String getName(){
+            return this.name;
+        }
+        public Long getSize(){
+            return this.size;
+        }
+        public int getNumOfPages(){
+            return this.numOfPages;
+        }
         // setters
+        public void setName(String newName){
+            this.name = newName;
+        }
+        public void setSize(Long newSize){
+            this.size = newSize;
+        }
+        public void setNumOfPages(int newNumOfPages){
+            this.numOfPages = newNumOfPages;
+        }
     };
 
-    public class FilesJson {
+    public class FilesJson {//This is for the entire metadata file?
         List<FileJson> file;
-
         public FilesJson() {
-
+            file = new ArrayList<FileJson>();
         }
+
         // getters
+        public FileJson getFile(int index){
+            return file.get(index);
+        }
+
+        public int getNumOfFilesInMetadata(){
+            return file.size();
+        }
+        
+        public Boolean doesFileExist(String fileName){
+            for(int i = 0; i < file.size(); i++){
+                if(file.get(i).getName().equals(fileName)){
+                    return true;
+                }
+            }
+            return false;
+        }
         // setters
+        public void addFile(FileJson fileToAdd){
+            file.add(fileToAdd);
+        }
+        
+        public void removeFile(String fileName){
+            for(int i = 0; i < file.size(); i++){
+                if(file.get(i).getName().equals(fileName)){
+                    file.remove(i);
+                }
+            }
+        }
     };
 
     int port;
@@ -75,7 +173,6 @@ public class DFS {
             return Math.abs(bigInt.longValue());
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-
         }
         return 0;
     }
