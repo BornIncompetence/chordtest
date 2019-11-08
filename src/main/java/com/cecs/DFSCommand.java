@@ -34,7 +34,7 @@ public final class DFSCommand {
                 dfs.print();
             }
             if (result[0].equals("ls")) {
-                dfs.lists();
+                System.out.println(dfs.lists());
             }
             if (result[0].equals("leave")) {
                 dfs.leave();

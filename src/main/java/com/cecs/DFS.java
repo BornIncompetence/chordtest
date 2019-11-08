@@ -288,8 +288,13 @@ public class DFS {
      *
      */
     public void move(String oldName, String newName) throws Exception {
-        // TODO: Change the name in Metadata
-        // Write Metadata
+        FilesJson metadata = this.readMetaData();
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
+            if(metadata.getFile(i).getName().equals(oldName)){
+                metadata.getFile(i).setName(newName);
+            }
+        }
+        writeMetaData(metadata);
     }
 
     /**
@@ -300,7 +305,9 @@ public class DFS {
     public String lists() throws Exception {
         FilesJson fileJson = readMetaData();
         String listOfFiles = "";
-
+        for(int i = 0; i < fileJson.getNumOfFilesInMetadata(); i++){
+            listOfFiles = listOfFiles + fileJson.getFile(i).getName() + "\n";
+        }
         return listOfFiles;
     }
 
