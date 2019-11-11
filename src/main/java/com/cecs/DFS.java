@@ -205,7 +205,19 @@ public class DFS {
      * @param pageNumber number of block.
      */
     public RemoteInputFileStream read(String fileName, int pageNumber) throws Exception {
-        return null;
+        FilesJson metadata = this.readMetaData();
+        PagesJson pagesJson = null;
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
+            if(metadata.getFile(i).getName().equals(fileName)){
+                pagesJson = metadata.getFile(i).getPage(pageNumber);
+
+            }
+        }
+        
+        long guid = md5("Metadata");
+        ChordMessageInterface peer = chord.locateSuccessor(guid);
+        RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
+        return blockData;
     }
 
     /**
