@@ -313,6 +313,7 @@ public class DFS {
 
     /**
      * create an empty file
+     * Must run this function before appending any files
      *
      * @param filename Name of the file
      */
@@ -356,10 +357,8 @@ public class DFS {
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
             if(metadata.getFile(i).getName().equals(fileName)){
                 pagesJson = metadata.getFile(i).getPage(pageNumber);
-
             }
         }
-        
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());

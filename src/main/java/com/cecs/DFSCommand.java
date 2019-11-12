@@ -40,7 +40,7 @@ public final class DFSCommand {
                 dfs.leave();
             }
             if (result[0].equals("touch")) {
-                //dfs.leave();
+                dfs.create(result[1]);
             }
             if (result[0].equals("delete")) {
                 dfs.delete(result[1]);
