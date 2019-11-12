@@ -357,8 +357,10 @@ public class DFS {
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
             if(metadata.getFile(i).getName().equals(fileName)){
                 pagesJson = metadata.getFile(i).getPage(pageNumber);
+                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
             }
         }
+        writeMetaData(metadata);
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
@@ -399,21 +401,26 @@ public class DFS {
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
             if(metadata.getFile(i).getName().equals(fileName)){
                 pagesJson = metadata.getFile(i).getPage(0);
+                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
             }
         }
+        writeMetaData(metadata);
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
         return blockData;
     }
+
     public RemoteInputFileStream tail(String filename) throws Exception{
         FilesJson metadata = this.readMetaData();
         PagesJson pagesJson = null;
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
             if(metadata.getFile(i).getName().equals(filename)){
                 pagesJson = metadata.getFile(i).getPage(metadata.getFile(i).getNumOfPages() - 1);
+                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
             }
         }
+        writeMetaData(metadata);
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());

@@ -48,11 +48,11 @@ public final class DFSCommand {
             if (result[0].equals("read")) {
                 dfs.read(result[1], Integer.parseInt(result[2]));
             }
-            if (result[0].equals("head")) {
-                //dfs.leave();
+            if (result[0].equals("head")) { //takes one argument, the filename, returns the first index of the pages that it contains
+                dfs.head(result[1]);
             }
             if (result[0].equals("tail")) {
-                //dfs.leave();
+                dfs.tail(result[1]);
             }
             if (result[0].equals("append")) {
                 RemoteInputFileStream fileToAppend = new RemoteInputFileStream(result[2]);
