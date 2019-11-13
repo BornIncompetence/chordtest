@@ -395,6 +395,13 @@ public class DFS {
         writeMetaData(metadata); //save changes to metadata file
     }
 
+    /**
+     * Reads the first page of the file
+     * 
+     * @param fileName   Name of the file
+     * @return           First index of the pages in the file
+     * @throws Exception
+     */
     public RemoteInputFileStream head(String fileName) throws Exception{
         FilesJson metadata = this.readMetaData();
         PagesJson pagesJson = null;
@@ -411,6 +418,13 @@ public class DFS {
         return blockData;
     }
 
+    /**
+     * Reads the last page of the file
+     * 
+     * @param filename   Name of the file
+     * @return           Last index of the pages in the file
+     * @throws Exception
+     */
     public RemoteInputFileStream tail(String filename) throws Exception{
         FilesJson metadata = this.readMetaData();
         PagesJson pagesJson = null;
