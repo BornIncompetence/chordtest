@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 
 import com.cecs.Models.Music;
+import com.cecs.Server.Communication;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 
@@ -77,6 +78,15 @@ public final class DFSCommand {
      * @throws NumberFormatException
      */
     public static void main(String[] args) throws NumberFormatException, Exception {
+        var comm = new Communication(5500, 32768);
+        try {
+            comm.openConnection();
+            System.out.println("Server startup complete");
+        } catch (IOException e) {
+            System.err.println("The server has encountered an error.");
+            e.printStackTrace();
+        }
+
         Gson gson = new Gson();
         RemoteInputFileStream in = new RemoteInputFileStream("music.json", false);
         in.connect();

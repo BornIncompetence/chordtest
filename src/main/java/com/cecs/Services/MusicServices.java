@@ -1,37 +1,40 @@
 package com.cecs.Services;
 
+import com.cecs.DFS;
+import com.cecs.RemoteInputFileStream;
 import com.cecs.Models.Music;
 import com.google.gson.GsonBuilder;
 
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MusicServices {
-    private static Music[] library;
-    private static HashMap<String, List<Music>> queries = new HashMap<>();
+    private Music[] library;
+    private HashMap<String, List<Music>> queries = new HashMap<>();
+    private DFS dfs;
 
-    public MusicServices() {
+    public MusicServices(DFS dfs) {
+        this.dfs = dfs;
     }
 
-    public static Music[] loadSongs(String asdf) {
+	public Music[] loadSongs(String asdf) throws Exception {
         if (library == null) {
             loadLibrary();
         }
         return library;
     }
 
-    public static int querySize(String query) {
+    public int querySize(String query) {
         if (query.isBlank()) {
             return library.length;
         }
         return queries.get(query).size();
     }
 
-    public static Music[] loadChunk(int start, int end, String query) {
+    public Music[] loadChunk(int start, int end, String query) throws Exception {
         if (library == null) {
             loadLibrary();
         }
@@ -55,8 +58,10 @@ public class MusicServices {
 
     }
 
-    private static void loadLibrary() {
-        var reader = new InputStreamReader(App.class.getResourceAsStream("/music.json"), StandardCharsets.UTF_8); //change to use DFS.read
+    private void loadLibrary() throws Exception {
+        RemoteInputFileStream is = dfs.read("music.json", 1);
+        is.connect();
+        var reader = new InputStreamReader(is);
         var musics = new GsonBuilder().create().fromJson(reader, Music[].class);
         for (var music : musics) {
             music.getSong().setArtist(music.getArtist().getName());
