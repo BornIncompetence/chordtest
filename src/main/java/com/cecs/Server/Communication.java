@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
-import com.cecs.DFS;
 import com.cecs.Models.User;
 import com.cecs.Services.MusicServices;
 import com.cecs.Services.SongServices;
@@ -18,21 +17,21 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class Communication {
+class Communication {
     private final int port;
     private final byte[] buffer;
     private final HashMap<String, Object> listOfObjects = new HashMap<>();
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    public Communication(int port, int size, DFS dfs) {
+    Communication(int port, int size) {
         this.port = port;
         this.buffer = new byte[size];
         this.listOfObjects.put("SongServices", new SongServices());
         this.listOfObjects.put("UserServices", new UserServices());
-        this.listOfObjects.put("MusicServices", new MusicServices(dfs));
+        this.listOfObjects.put("MusicServices", new MusicServices());
     }
 
-    public void openConnection() throws IOException {
+    void openConnection() throws IOException {
         var socket = new DatagramSocket(port);
         while (true) {
             // Receive
