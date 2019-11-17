@@ -1,4 +1,4 @@
-package com.cecs.model;
+package com.cecs;
 
 import java.util.ArrayList;
 

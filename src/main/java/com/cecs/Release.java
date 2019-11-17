@@ -1,4 +1,4 @@
-package com.cecs.model;
+package com.cecs;
 
 public class Release {
     private int id;

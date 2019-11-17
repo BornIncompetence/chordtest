@@ -1,4 +1,4 @@
-package com.cecs.model;
+package com.cecs;
 
 public class Music {
     private Release release;
