@@ -440,12 +440,4 @@ public class DFS {
         RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
         return blockData;
     }
-
-    public RemoteInputFileStream search(String filename, String query) throws Exception{
-        FilesJson metadata = this.readMetaData();
-        PagesJson pagesJson = null;
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-
-        }
-    }
 }

@@ -1,4 +1,4 @@
-package com.cecs.Services;
+package com.cecs;
 
 import java.io.File;
 import java.io.FileInputStream;
