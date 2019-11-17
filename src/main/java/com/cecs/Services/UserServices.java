@@ -16,7 +16,7 @@ import static java.util.Arrays.binarySearch;
 public class UserServices {
     private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    UserServices() {
+    public UserServices() {
     }
 
     /**

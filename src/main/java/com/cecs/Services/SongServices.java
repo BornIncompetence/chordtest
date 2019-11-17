@@ -8,7 +8,7 @@ import java.util.Base64;
 public class SongServices {
     private static final int FRAGMENT_SIZE = 16384;
 
-    SongServices() {
+    public SongServices() {
     }
 
     /*

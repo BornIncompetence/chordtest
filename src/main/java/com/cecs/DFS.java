@@ -447,5 +447,6 @@ public class DFS {
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
 
         }
+        return null;
     }
 }
