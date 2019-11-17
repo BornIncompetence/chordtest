@@ -504,10 +504,4 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             System.out.println("Cannot retrive id of successor or predecessor");
         }
     }
-
-    @Override
-    public RemoteInputFileStream search(String word) throws RemoteException {
-        // TODO Auto-generated method stub
-        return null;
-    }
 }

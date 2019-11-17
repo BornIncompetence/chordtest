@@ -14,7 +14,7 @@ public class MusicServices {
     private static Music[] library;
     private static HashMap<String, List<Music>> queries = new HashMap<>();
 
-    public MusicServices() {
+    MusicServices() {
     }
 
     public static Music[] loadSongs(String asdf) {

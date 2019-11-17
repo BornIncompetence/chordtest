@@ -1,4 +1,4 @@
-package com.cecs.Models;
+package com.cecs.model;
 
 public class Song {
     private String key;
