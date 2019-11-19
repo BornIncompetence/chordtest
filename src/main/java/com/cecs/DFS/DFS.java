@@ -354,17 +354,18 @@ public class DFS {
     public RemoteInputFileStream read(String fileName, int pageNumber) throws Exception {
         FilesJson metadata = this.readMetaData();
         PagesJson pagesJson = null;
+        RemoteInputFileStream rifs = null;
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
             if(metadata.getFile(i).getName().equals(fileName)){
+                System.out.println("found file");
                 pagesJson = metadata.getFile(i).getPage(pageNumber);
                 metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
+                ChordMessageInterface peer = chord.locateSuccessor(pagesJson.getGuid());
+                rifs = peer.get(pagesJson.getGuid());
             }
+            writeMetaData(metadata);
         }
-        writeMetaData(metadata);
-        long guid = md5("Metadata");
-        ChordMessageInterface peer = chord.locateSuccessor(guid);
-        RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
-        return blockData;
+        return rifs;
     }
 
     /**
