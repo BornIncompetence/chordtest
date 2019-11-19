@@ -33,7 +33,7 @@ public class MusicServices {
         }
         return library;
     }
-
+/*
     public void updateLibrarySize(){
         RemoteInputFileStream rifs;
         int numOfPages = 0;
@@ -57,9 +57,10 @@ public class MusicServices {
             e.printStackTrace();
         }
     }
+    */
     public int querySize(String query) {
         if (query.isBlank()) {
-            return library_size;
+            return library.length;
         }
         return queries.get(query).size();
     }
