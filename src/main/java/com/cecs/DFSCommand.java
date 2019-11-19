@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
+import com.cecs.DFS.DFS;
+import com.cecs.DFS.RemoteInputFileStream;
+import com.cecs.Models.Music;
+import com.cecs.Server.Communication;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 
@@ -61,6 +65,15 @@ public final class DFSCommand {
             }
             if (result[0].equals("move")) {
                 dfs.move(result[1], result[2]);
+            }
+            if(result[0].equals("server")){
+                var comm = new Communication(5500, 32768, dfs);
+                try {
+                    comm.openConnection();
+                } catch (IOException e) {
+                    System.err.println("The server has encountered an error.");
+                    e.printStackTrace();
+                }
             }
             line = buffer.readLine();
         }

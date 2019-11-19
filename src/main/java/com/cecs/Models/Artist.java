@@ -1,4 +1,4 @@
-package com.cecs;
+package com.cecs.Models;
 
 public class Artist {
     private float terms_freq;

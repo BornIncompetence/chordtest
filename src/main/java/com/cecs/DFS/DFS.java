@@ -1,4 +1,4 @@
-package com.cecs;
+package com.cecs.DFS;
 
 import java.util.*;
 import java.nio.file.*;
@@ -440,4 +440,15 @@ public class DFS {
         RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
         return blockData;
     }
+
+	public int GetNumberOfPagesForFile(String filename) throws Exception {
+		FilesJson metadata = this.readMetaData();
+        int numberOfPagesInFile = 0;
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
+            if(metadata.getFile(i).getName().equals(filename)){
+                numberOfPagesInFile = metadata.getFile(i).getNumOfPages();
+            }
+        }
+        return numberOfPagesInFile;
+	}
 }

@@ -1,4 +1,4 @@
-package com.cecs;
+package com.cecs.DFS;
 
 import java.rmi.*;
 import java.io.*;
