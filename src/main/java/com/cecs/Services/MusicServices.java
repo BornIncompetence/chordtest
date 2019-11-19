@@ -1,5 +1,6 @@
 package com.cecs.Services;
 
+import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,7 +10,7 @@ import java.util.stream.Collectors;
 import com.cecs.DFS.DFS;
 import com.cecs.DFS.RemoteInputFileStream;
 import com.cecs.Models.Music;
-import com.google.gson.GsonBuilder;
+import com.google.gson.Gson;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -17,6 +18,7 @@ public class MusicServices {
     private Music[] library;
     private HashMap<String, List<Music>> queries = new HashMap<>();
     public DFS dfs;
+    public Gson gson = new Gson();
 
     public MusicServices(DFS dfs) {
         this.dfs = dfs;
@@ -36,9 +38,13 @@ public class MusicServices {
         return queries.get(query).size();
     }
 
-    public Music[] loadChunk(int start, int end, String query) throws Exception {
+    public Music[] loadChunk(int start, int end, String query) {
         if (library == null) {
-            loadLibrary();
+            try {
+                loadLibrary();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         if (query.isBlank()) {
             var toIndex = Integer.min(end, library.length);
@@ -57,27 +63,22 @@ public class MusicServices {
         queries.put(query, musics);
         var toIndex = Integer.min(end, musics.size());
         return musics.subList(start, toIndex).toArray(new Music[0]);
-
     }
 
-    private void loadLibrary() throws Exception {
-        Music[] listOfSongs = new Music[0];
-        for(int i = 0; i < dfs.GetNumberOfPagesForFile("music.json"); i++){
-            RemoteInputFileStream rifs = dfs.read("music.json", i);
-            var reader = new InputStreamReader(rifs);
-            var musics = new GsonBuilder().create().fromJson(reader, Music[].class);
+    private void loadLibrary() {
+        RemoteInputFileStream rifs;
+        try {
+            rifs = dfs.read("music", 0);
+            rifs.connect();
+            InputStreamReader reader = new InputStreamReader(rifs);
+            String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+            Music[] musics = gson.fromJson(json, Music[].class);
             for (var music : musics) {
                 music.getSong().setArtist(music.getArtist().getName());
             }
-            listOfSongs = concatenateArrays(listOfSongs, musics);
+            library = musics;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        library = listOfSongs;
-    }
-
-    private Music[] concatenateArrays(Music[] firstArray, Music[] secondArray){
-        int sizeOfNewArray = firstArray.length + secondArray.length;
-        Music[] newArray = new Music[sizeOfNewArray];
-        newArray = ArrayUtils.addAll(firstArray, secondArray);
-        return newArray;
     }
 }
