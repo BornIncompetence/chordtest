@@ -89,8 +89,9 @@ public class UserServices {
      */
     public boolean createAccount(String username, String password) throws Exception {
         var newUser = new User(username, password);
+        System.out.println("testing");
         var users = loadUsers();
-
+        
         User[] newUsers;
         if (users == null) {
             newUsers = new User[] { newUser };
@@ -147,6 +148,7 @@ public class UserServices {
     private User[] loadUsers() throws Exception {
         RemoteInputFileStream rifs;
         rifs = dfs.read("users", 0);
+        if(rifs == null) return null;
         rifs.connect();
         InputStreamReader reader = new InputStreamReader(rifs);
         String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
