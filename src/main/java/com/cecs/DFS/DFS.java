@@ -459,6 +459,7 @@ public class DFS {
         byte[] byteArrayOfSong = null;
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
             if(metadata.getFile(i).getName().equals(filename)){
+                System.out.println("Found song");
                 Long guidOfSong = metadata.getFile(i).getPage(0).getGuid();
                 ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfSong);
                 byteArrayOfSong = nodeToHostFile.get(guidOfSong, offset, fragmentSize);
