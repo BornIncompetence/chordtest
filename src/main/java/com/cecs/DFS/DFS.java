@@ -451,5 +451,29 @@ public class DFS {
             }
         }
         return numberOfPagesInFile;
-	}
+    }
+    
+    public byte[] GetSong(String filename, long offset, int fragmentSize) throws Exception {
+        FilesJson metadata = this.readMetaData();
+        byte[] byteArrayOfSong = null;
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
+            if(metadata.getFile(i).getName().equals(filename)){
+                Long guidOfSong = metadata.getFile(i).getPage(0).getGuid();
+                ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfSong);
+                byteArrayOfSong = nodeToHostFile.get(guidOfSong, offset, fragmentSize);
+            }
+        }
+        return byteArrayOfSong;
+    } 
+
+    public int getSongSize(String filename) throws Exception {
+        FilesJson metadata = this.readMetaData();
+        int size = 0;
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
+            if(metadata.getFile(i).getName().equals(filename)){
+                size = metadata.getFile(i).getSize().intValue();
+            }
+        }
+        return size;
+    }
 }
