@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.cecs.DFS.DFS;
 import com.cecs.DFS.RemoteInputFileStream;
+import com.cecs.DFS.DFS.FilesJson;
 import com.cecs.Models.Music;
 import com.google.gson.Gson;
 
@@ -20,8 +21,10 @@ public class MusicServices {
     public DFS dfs;
     public Gson gson = new Gson();
 
+    public int library_size;
     public MusicServices(DFS dfs) {
         this.dfs = dfs;
+        this.library_size = 0;
     }
 
     public Music[] loadSongs(String asdf) throws Exception {
@@ -31,9 +34,32 @@ public class MusicServices {
         return library;
     }
 
+    public void updateLibrarySize(){
+        RemoteInputFileStream rifs;
+        int numOfPages = 0;
+        try {
+            FilesJson files = dfs.readMetaData();
+            for(int i = 0; i < files.getNumOfFilesInMetadata(); i++){
+                if(files.getFile(i).getName().equals("music")){
+                    numOfPages = files.getFile(i).getNumOfPages();
+                    break;
+                }               
+            }
+            for(int i = 0; i < numOfPages; i++){
+                rifs = dfs.read("music", i);
+                rifs.connect();
+                InputStreamReader reader = new InputStreamReader(rifs);
+                String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+                Music[] musics = gson.fromJson(json, Music[].class);
+                library_size += musics.length;
+            }           
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     public int querySize(String query) {
         if (query.isBlank()) {
-            return library.length;
+            return library_size;
         }
         return queries.get(query).size();
     }
@@ -67,16 +93,26 @@ public class MusicServices {
 
     private void loadLibrary() {
         RemoteInputFileStream rifs;
+        int numOfPages = 0;
         try {
-            rifs = dfs.read("music", 0);
-            rifs.connect();
-            InputStreamReader reader = new InputStreamReader(rifs);
-            String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
-            Music[] musics = gson.fromJson(json, Music[].class);
-            for (var music : musics) {
-                music.getSong().setArtist(music.getArtist().getName());
+            FilesJson files = dfs.readMetaData();
+            for(int i = 0; i < files.getNumOfFilesInMetadata(); i++){
+                if(files.getFile(i).getName().equals("music")){
+                    numOfPages = files.getFile(i).getNumOfPages();
+                    break;
+                }               
             }
-            library = musics;
+            for(int i = 0; i < numOfPages; i++){
+                rifs = dfs.read("music", i);
+                rifs.connect();
+                InputStreamReader reader = new InputStreamReader(rifs);
+                String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+                Music[] musics = gson.fromJson(json, Music[].class);
+                for (var music : musics) {
+                    music.getSong().setArtist(music.getArtist().getName());
+                }
+                library = ArrayUtils.addAll(library, musics);
+            }           
         } catch (Exception e) {
             e.printStackTrace();
         }

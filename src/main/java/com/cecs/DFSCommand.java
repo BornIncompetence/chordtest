@@ -94,7 +94,6 @@ public final class DFSCommand {
         in.connect();
         Reader targetReader = new InputStreamReader(in);
         JsonReader jreader = new JsonReader(targetReader);
-        Music[] music = gson.fromJson(jreader, Music[].class);
         System.out.println("Reading music successful!");
 
         if (args.length < 1) {

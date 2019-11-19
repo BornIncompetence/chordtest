@@ -365,6 +365,7 @@ public class DFS {
             }
             writeMetaData(metadata);
         }
+        System.out.println(rifs);
         return rifs;
     }
 

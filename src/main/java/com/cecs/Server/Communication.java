@@ -46,6 +46,8 @@ public class Communication {
                 System.out.println("Server is closing...");
                 break;
             }
+
+            System.out.println(message);
             final var out = dispatch(message).getBytes();
 
             // Get client info
