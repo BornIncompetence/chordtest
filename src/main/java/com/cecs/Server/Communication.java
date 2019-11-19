@@ -28,7 +28,7 @@ public class Communication {
         this.port = port;
         this.buffer = new byte[size];
         this.listOfObjects.put("SongServices", new SongServices());
-        this.listOfObjects.put("UserServices", new UserServices());
+        this.listOfObjects.put("UserServices", new UserServices(dfs));
         this.listOfObjects.put("MusicServices", new MusicServices(dfs));
     }
 

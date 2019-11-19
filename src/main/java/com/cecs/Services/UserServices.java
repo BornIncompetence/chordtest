@@ -2,21 +2,23 @@ package com.cecs.Services;
 
 import static java.util.Arrays.binarySearch;
 
-import java.io.File;
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
+import com.cecs.DFS.DFS;
+import com.cecs.DFS.RemoteInputFileStream;
 import com.cecs.Models.User;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class UserServices {
-    private static Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-    public UserServices() {
+    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    public DFS dfs;
+    public UserServices(DFS dfs) {
+        this.dfs = dfs;
     }
 
     /**
@@ -26,9 +28,9 @@ public class UserServices {
      * @param user The user whose playlist is being updated
      * @return <code>true</code> if update is successful and <code>false</code>
      *         otherwise
-     * @throws IOException If file could not be found or modified
+     * @throws Exception
      */
-    public static boolean updateUser(User user) throws IOException {
+    public boolean updateUser(User user) throws Exception {
         var users = loadUsers();
 
         if (users == null) {
@@ -46,10 +48,13 @@ public class UserServices {
         var writer = new FileWriter("users.json");
         writer.write(jsonUsers);
         writer.close();
+        dfs.delete("users");
+        dfs.create("users");
+        dfs.append("users", new RemoteInputFileStream("users.json"));
         return true;
     }
 
-    public static boolean deleteAccount(User user) throws IOException {
+    public boolean deleteAccount(User user) throws Exception {
         var users = loadUsers();
         var newUsers = new User[users.length - 1];
 
@@ -66,6 +71,9 @@ public class UserServices {
         var writer = new FileWriter("users.json");
         writer.write(jsonUsers);
         writer.close();
+        dfs.delete("users");
+        dfs.create("users");
+        dfs.append("users", new RemoteInputFileStream("users.json"));
         return true;
     }
 
@@ -77,10 +85,9 @@ public class UserServices {
      *
      * @return <code>true</code> If new user is added to file, <code>false</code> if
      *         the username already exists
-     *
-     * @throws IOException If file could not be modified or created
+     * @throws Exception
      */
-    public static boolean createAccount(String username, String password) throws IOException {
+    public boolean createAccount(String username, String password) throws Exception {
         var newUser = new User(username, password);
         var users = loadUsers();
 
@@ -109,7 +116,9 @@ public class UserServices {
         var writer = new FileWriter("users.json");
         writer.write(jsonUsers);
         writer.close();
-
+        dfs.delete("users");
+        dfs.create("users");
+        dfs.append("users", new RemoteInputFileStream("users.json"));
         return true;
     }
 
@@ -121,9 +130,9 @@ public class UserServices {
      * @param password Password of user
      * @return <code>ArrayList</code> of user from the server if the user is found,
      *         or <code>null</code> if the user is not found
-     * @throws IOException If file could not be found or modified
+     * @throws Exception
      */
-    public static User login(String username, String password) throws IOException {
+    public User login(String username, String password) throws Exception {
         var users = loadUsers();
 
         return Arrays.stream(users).filter(it -> it.username.equalsIgnoreCase(username) && it.password.equals(password))
@@ -132,15 +141,16 @@ public class UserServices {
 
     /**
      * Loads the users.json file into the program.
-     *
-     * @throws IOException If file could not be modified or created
+     * 
+     * @throws Exception
      */
-    private static User[] loadUsers() throws IOException {
-        var file = new File("users.json");
-        file.createNewFile();
-
-        // Load current Users from user file
-        var reader = new FileReader(file, StandardCharsets.UTF_8);
-        return gson.fromJson(reader, User[].class);
+    private User[] loadUsers() throws Exception {
+        RemoteInputFileStream rifs;
+        rifs = dfs.read("users", 0);
+        rifs.connect();
+        InputStreamReader reader = new InputStreamReader(rifs);
+        String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+        User[] users = gson.fromJson(json, User[].class);
+        return users;
     }
 }
