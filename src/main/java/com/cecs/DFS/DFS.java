@@ -108,10 +108,11 @@ public class DFS {
             this.writeTS = writeTS;
         }
 
-    };
+    }
 
-    public class FileJson { // Structure for all the files that will be listed in metadata? eg imperial.mp3
-                            // or song files
+    // Structure for all the files that will be listed in metadata? eg imperial.mp3
+    // or song files
+    public class FileJson {
         String name;
         long size; // Total size of the file, calculated from adding each part from every node
         ArrayList<PagesJson> pages;
@@ -123,7 +124,7 @@ public class DFS {
 
         public FileJson() {
             this.size = 0L;
-            pages = new ArrayList<PagesJson>();
+            pages = new ArrayList<>();
             creationTS = LocalDateTime.now().toString();
             readTS = "0";
             writeTS = "0";
@@ -178,13 +179,14 @@ public class DFS {
         public void addNewPage(PagesJson newPageToAdd) {
             this.pages.add(newPageToAdd);
         }
-    };
+    }
 
-    public class FilesJson {// This is for the entire metadata file?
+    // This is for the entire metadata file?
+    public class FilesJson {
         List<FileJson> file;
 
         public FilesJson() {
-            file = new ArrayList<FileJson>();
+            file = new ArrayList<>();
         }
 
         // getters
@@ -242,11 +244,7 @@ public class DFS {
         chord = new Chord(port, guid);
         Files.createDirectories(Paths.get(guid + "/repository"));
         Files.createDirectories(Paths.get(guid + "/tmp"));
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                chord.leave();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> chord.leave()));
 
     }
 
@@ -254,7 +252,7 @@ public class DFS {
      * Join the chord
      *
      */
-    public void join(String Ip, int port) throws RemoteException {
+    public void join(String Ip, int port) {
         chord.joinRing(Ip, port);
         chord.print();
     }
@@ -280,16 +278,16 @@ public class DFS {
      *
      */
     public FilesJson readMetaData() {
-        FilesJson filesJson = null;
+        FilesJson filesJson;
         try {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             long guid = md5("Metadata");
 
             System.out.println("GUID " + guid);
             ChordMessageInterface peer = chord.locateSuccessor(guid);
-            RemoteInputFileStream metadataraw = peer.get(guid);
-            metadataraw.connect();
-            Scanner scan = new Scanner(metadataraw);
+            RemoteInputFileStream rawMetadata = peer.get(guid);
+            rawMetadata.connect();
+            Scanner scan = new Scanner(rawMetadata);
             scan.useDelimiter("\\A");
             String strMetaData = scan.next();
             System.out.println(gson.toJson(JsonParser.parseString(strMetaData)));
@@ -331,11 +329,11 @@ public class DFS {
      */
     public String lists() {
         FilesJson fileJson = readMetaData();
-        String listOfFiles = "";
+        StringBuilder listOfFiles = new StringBuilder();
         for (int i = 0; i < fileJson.getNumOfFilesInMetadata(); i++) {
-            listOfFiles = listOfFiles + fileJson.getFile(i).getName() + "\n";
+            listOfFiles.append(fileJson.getFile(i).getName()).append("\n");
         }
-        return listOfFiles;
+        return listOfFiles.toString();
     }
 
     /**
@@ -379,7 +377,7 @@ public class DFS {
      */
     public RemoteInputFileStream read(String fileName, int pageNumber) throws RemoteException {
         FilesJson metadata = this.readMetaData();
-        PagesJson pagesJson = null;
+        PagesJson pagesJson;
         RemoteInputFileStream rifs = null;
         for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
             if (metadata.getFile(i).getName().equals(fileName)) {

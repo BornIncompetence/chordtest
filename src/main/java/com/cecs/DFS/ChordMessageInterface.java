@@ -1,7 +1,6 @@
 package com.cecs.DFS;
 
 import java.rmi.*;
-import java.io.*;
 
 public interface ChordMessageInterface extends Remote {
     ChordMessageInterface getPredecessor() throws RemoteException;

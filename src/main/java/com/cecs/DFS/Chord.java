@@ -68,7 +68,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             }
         }, 1000, 1000); // Every second
         // create the registry and bind the name and object.
-        System.out.format("%d is starting RMI at port=%d", guid, port);
+        System.out.format("%d is starting RMI at port=%d\n", guid, port);
         registry = LocateRegistry.createRegistry(port);
         registry.rebind("Chord", this);
     }
@@ -132,7 +132,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * @param guidObject GUID of the object to return
      */
     public RemoteInputFileStream get(long guidObject) throws RemoteException {
-        RemoteInputFileStream file = null;
+        RemoteInputFileStream file;
         try {
             file = new RemoteInputFileStream(prefix + guidObject);
         } catch (IOException e) {
