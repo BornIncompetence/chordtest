@@ -12,6 +12,7 @@ import com.cecs.DFS.RemoteInputFileStream;
 import com.cecs.DFS.DFS.FilesJson;
 import com.cecs.Models.Music;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -19,7 +20,7 @@ public class MusicServices {
     private Music[] library;
     private HashMap<String, List<Music>> queries = new HashMap<>();
     public DFS dfs;
-    public Gson gson = new Gson();
+    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public int library_size;
 

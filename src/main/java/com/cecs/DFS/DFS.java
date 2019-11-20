@@ -125,7 +125,7 @@ public class DFS {
         public FileJson() {
             this.size = 0L;
             pages = new ArrayList<>();
-            creationTS = LocalDateTime.now().toString();
+            creationTS = now();
             readTS = "0";
             writeTS = "0";
             numOfPages = 0;
@@ -223,6 +223,7 @@ public class DFS {
 
     int port;
     Chord chord;
+    Gson gson;
 
     private long md5(String objectName) {
         try {
@@ -237,11 +238,15 @@ public class DFS {
         return 0;
     }
 
-    public DFS(int port) throws IOException {
+    private String now() {
+        return LocalDateTime.now().toString();
+    }
 
+    public DFS(int port) throws IOException {
+        this.gson = new GsonBuilder().setPrettyPrinting().create();
         this.port = port;
         long guid = md5("" + port);
-        chord = new Chord(port, guid);
+        this.chord = new Chord(port, guid);
         Files.createDirectories(Paths.get(guid + "/repository"));
         Files.createDirectories(Paths.get(guid + "/tmp"));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> chord.leave()));
@@ -280,19 +285,18 @@ public class DFS {
     public FilesJson readMetaData() {
         FilesJson filesJson;
         try {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
             long guid = md5("Metadata");
 
             System.out.println("GUID " + guid);
             ChordMessageInterface peer = chord.locateSuccessor(guid);
             RemoteInputFileStream rawMetadata = peer.get(guid);
             rawMetadata.connect();
-            Scanner scan = new Scanner(rawMetadata);
+            var scan = new Scanner(rawMetadata);
             scan.useDelimiter("\\A");
-            String strMetaData = scan.next();
-            System.out.println(gson.toJson(JsonParser.parseString(strMetaData)));
-            filesJson = gson.fromJson(strMetaData, FilesJson.class);
-        } catch (RemoteException e) {
+            var strMetaData = scan.next();
+            System.out.println(this.gson.toJson(JsonParser.parseString(strMetaData)));
+            filesJson = this.gson.fromJson(strMetaData, FilesJson.class);
+        } catch (RemoteException | NoSuchElementException e) {
             filesJson = new FilesJson();
         }
         return filesJson;
@@ -305,9 +309,7 @@ public class DFS {
     public void writeMetaData(FilesJson filesJson) throws RemoteException {
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
-
-        Gson gson = new Gson();
-        peer.put(guid, gson.toJson(filesJson));
+        peer.put(guid, this.gson.toJson(filesJson));
     }
 
     /**
@@ -383,7 +385,7 @@ public class DFS {
             if (metadata.getFile(i).getName().equals(fileName)) {
                 System.out.println("found file");
                 pagesJson = metadata.getFile(i).getPage(pageNumber);
-                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
+                metadata.getFile(i).setReadTS(now());
                 ChordMessageInterface peer = chord.locateSuccessor(pagesJson.getGuid());
                 rifs = peer.get(pagesJson.getGuid());
             }
@@ -407,16 +409,15 @@ public class DFS {
             if (metadata.getFile(i).getName().equals(filename)) {
                 // code to update the metadata of the specified file
                 metadata.getFile(i).setSize(metadata.getFile(i).getSize() + (long) data.available());
-                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
-                metadata.getFile(i).setWriteTS(LocalDateTime.now().toString());
+                metadata.getFile(i).setReadTS(now());
+                metadata.getFile(i).setWriteTS(now());
                 metadata.getFile(i).setNumOfPages(metadata.getFile(i).getNumOfPages() + 1);
                 metadata.getFile(i).compareAndSetMaxPageSize(data.available());
                 // code to add to file to chord
-                long guidOfNewFile = md5(filename + LocalDateTime.now().toString());
+                long guidOfNewFile = md5(filename + now());
                 ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
                 nodeToHostFile.put(guidOfNewFile, data);
-                var now = LocalDateTime.now().toString();
-                PagesJson newPageToAdd = new PagesJson(guidOfNewFile, data.available(), now, now, now, 0);
+                PagesJson newPageToAdd = new PagesJson(guidOfNewFile, data.available(), now(), now(), now(), 0);
                 metadata.getFile(i).addNewPage(newPageToAdd);
             }
         }
@@ -436,7 +437,7 @@ public class DFS {
         for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
             if (metadata.getFile(i).getName().equals(fileName)) {
                 pagesJson = metadata.getFile(i).getPage(0);
-                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
+                metadata.getFile(i).setReadTS(now());
             }
         }
         writeMetaData(metadata);
@@ -458,7 +459,7 @@ public class DFS {
         for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
             if (metadata.getFile(i).getName().equals(filename)) {
                 pagesJson = metadata.getFile(i).getPage(metadata.getFile(i).getNumOfPages() - 1);
-                metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
+                metadata.getFile(i).setReadTS(now());
             }
         }
         writeMetaData(metadata);

@@ -85,7 +85,7 @@ public class RemoteInputFileStream extends InputStream implements Serializable {
                     file.delete();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.format("File at %s does not exist in chord\n", pathName);
             }
         }).start();
     }

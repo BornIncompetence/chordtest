@@ -23,8 +23,7 @@ public final class DFSCommand {
         }
 
         BufferedReader buffer = new BufferedReader(new InputStreamReader(System.in));
-        String line = buffer.readLine();
-        while (!line.equals("quit")) {
+        for (String line = ""; !line.equals("quit"); line = buffer.readLine()) {
             String[] result = line.split("\\s");
             if (result[0].equals("join") && result.length > 1) {
                 dfs.join("127.0.0.1", Integer.parseInt(result[1]));
@@ -70,7 +69,6 @@ public final class DFSCommand {
                     e.printStackTrace();
                 }
             }
-            line = buffer.readLine();
         }
         // User interface:
         // join, ls, touch, delete, read, tail, head, append, move

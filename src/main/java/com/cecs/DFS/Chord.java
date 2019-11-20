@@ -203,15 +203,18 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * @param key return the Chord Interface of the successor of key
      */
     public ChordMessageInterface locateSuccessor(long key) throws RemoteException {
-        if (key == guid)
+        if (key == guid) {
             throw new IllegalArgumentException("Key must be distinct that  " + guid);
+        }
         if (successor.getId() != guid) {
-            if (isKeyInSemiCloseInterval(key, guid, successor.getId()))
+            if (isKeyInSemiCloseInterval(key, guid, successor.getId())) {
                 return successor;
+            }
             ChordMessageInterface j = closestPrecedingNode(key);
 
-            if (j == null)
+            if (j == null) {
                 return null;
+            }
             return j.locateSuccessor(key);
         }
         return successor;
@@ -228,7 +231,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             int i = M - 1;
             while (i >= 0) {
                 try {
-
                     // It verifies from the largest interval
                     if (finger[i] != null && isKeyInSemiCloseInterval(finger[i].getId(), guid, key)) {
                         if (finger[i].getId() != key)
@@ -401,8 +403,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      */
     public void checkPredecessor() {
         try {
-            if (predecessor != null && !predecessor.isAlive())
+            if (predecessor != null && !predecessor.isAlive()) {
                 predecessor = null;
+            }
         } catch (RemoteException e) {
             predecessor = null;
         }
