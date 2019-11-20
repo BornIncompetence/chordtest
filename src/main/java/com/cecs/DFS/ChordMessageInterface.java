@@ -4,29 +4,29 @@ import java.rmi.*;
 import java.io.*;
 
 public interface ChordMessageInterface extends Remote {
-    public ChordMessageInterface getPredecessor() throws RemoteException;
+    ChordMessageInterface getPredecessor() throws RemoteException;
 
     ChordMessageInterface locateSuccessor(long key) throws RemoteException;
 
     ChordMessageInterface closestPrecedingNode(long key) throws RemoteException;
 
-    public void joinRing(String Ip, int port) throws RemoteException;
+    void joinRing(String Ip, int port) throws RemoteException;
 
-    public void joinRing(ChordMessageInterface successor) throws RemoteException;
+    void joinRing(ChordMessageInterface successor) throws RemoteException;
 
-    public void notify(ChordMessageInterface j) throws RemoteException;
+    void notify(ChordMessageInterface j) throws RemoteException;
 
-    public boolean isAlive() throws RemoteException;
+    boolean isAlive() throws RemoteException;
 
-    public long getId() throws RemoteException;
+    long getId() throws RemoteException;
 
-    public void put(long guidObject, RemoteInputFileStream inputStream) throws IOException, RemoteException;
+    void put(long guidObject, RemoteInputFileStream inputStream) throws RemoteException;
 
-    public void put(long guidObject, String text) throws IOException, RemoteException;
+    void put(long guidObject, String text) throws RemoteException;
 
-    public RemoteInputFileStream get(long guidObject) throws IOException, RemoteException;
+    RemoteInputFileStream get(long guidObject) throws RemoteException;
 
-    public byte[] get(long guidObject, long offset, int len) throws IOException, RemoteException;
+    byte[] get(long guidObject, long offset, int len) throws RemoteException;
 
-    public void delete(long guidObject) throws IOException, RemoteException;
+    void delete(long guidObject) throws RemoteException;
 }

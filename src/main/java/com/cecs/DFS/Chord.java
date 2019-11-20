@@ -1,11 +1,11 @@
 package com.cecs.DFS;
 
-/**
-* Chord implements Chord P2P
-*
-* @author  Oscar Morales-Ponce
-* @version 0.15
-* @since   03-3-2019
+/*
+ * Chord implements Chord P2P
+ *
+ * @author  Oscar Morales-Ponce
+ * @version 0.15
+ * @since   03-3-2019
 */
 
 import java.rmi.*;
@@ -16,7 +16,6 @@ import java.io.*;
 /**
  * Chord extends from UnicastRemoteObject to support RMI. It implements the
  * ChordMessageInterface
- *
  */
 public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordMessageInterface {
     private static final long serialVersionUID = 6553087366009046155L;
@@ -50,17 +49,13 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * @param guid the global unique id of the peer.
      */
     public Chord(int port, long guid) throws RemoteException {
-        int j;
         // Initialize the variables
-        prefix = "./" + guid + "/repository/";
-        finger = new ChordMessageInterface[M];
-        for (j = 0; j < M; j++) {
-            finger[j] = null;
-        }
+        this.prefix = "./" + guid + "/repository/";
+        this.finger = new ChordMessageInterface[M];
         this.guid = guid;
-        nextFinger = 0;
-        predecessor = null;
-        successor = this;
+        this.nextFinger = 0;
+        this.predecessor = null;
+        this.successor = this;
         Timer timer = new Timer();
         // It sets the timer to self stabilize the chord when nodes leave or join
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -72,14 +67,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                 checkPredecessor();
             }
         }, 1000, 1000); // Every second
-        try {
-            // create the registry and bind the name and object.
-            System.out.println(guid + " is starting RMI at port=" + port);
-            registry = LocateRegistry.createRegistry(port);
-            registry.rebind("Chord", this);
-        } catch (RemoteException e) {
-            throw e;
-        }
+        // create the registry and bind the name and object.
+        System.out.format("%d is starting RMI at port=%d", guid, port);
+        registry = LocateRegistry.createRegistry(port);
+        registry.rebind("Chord", this);
     }
 
     /**
@@ -105,7 +96,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * @param guidObject GUID of the object to store
      * @param stream     File to store
      */
-    public void put(long guidObject, RemoteInputFileStream stream) throws RemoteException {
+    public void put(long guidObject, RemoteInputFileStream stream) {
         stream.connect();
         try {
             String fileName = prefix + guidObject;
@@ -114,7 +105,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                 output.write(stream.read());
             output.close();
         } catch (IOException e) {
-            System.out.println(e);
+            e.printStackTrace();
         }
     }
 
@@ -124,7 +115,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * @param guidObject GUID of the object to store
      * @param text       text to store
      */
-    public void put(long guidObject, String text) throws RemoteException {
+    public void put(long guidObject, String text) {
         try {
             String fileName = prefix + guidObject;
             FileOutputStream output = new FileOutputStream(fileName);
@@ -175,7 +166,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * 
      * @param guidObject GUID of the object to delete
      */
-    public void delete(long guidObject) throws RemoteException {
+    public void delete(long guidObject) {
         File file = new File(prefix + guidObject);
         file.delete();
     }
@@ -183,7 +174,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
     /**
      * returns the id of the peer
      */
-    public long getId() throws RemoteException {
+    public long getId() {
         return guid;
     }
 
@@ -192,7 +183,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * <p>
      * return true
      */
-    public boolean isAlive() throws RemoteException {
+    public boolean isAlive() {
         return true;
     }
 
@@ -201,7 +192,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * <p>
      * return the Chord Interface of the predecessor
      */
-    public ChordMessageInterface getPredecessor() throws RemoteException {
+    public ChordMessageInterface getPredecessor() {
         return predecessor;
     }
 
@@ -232,7 +223,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * 
      * @param key return the Chord Interface of the closet preceding node
      */
-    public ChordMessageInterface closestPrecedingNode(long key) throws RemoteException {
+    public ChordMessageInterface closestPrecedingNode(long key) {
         if (key != guid) {
             int i = M - 1;
             while (i >= 0) {
@@ -262,7 +253,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * @param ip   of the peer
      * @param port of the peer
      */
-    public void joinRing(String ip, int port) throws RemoteException {
+    public void joinRing(String ip, int port) {
         try {
             System.out.println("Get Registry to joining ring");
             Registry registry = LocateRegistry.getRegistry(ip, port);
@@ -281,7 +272,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
      * 
      * @param s is the successor
      */
-    public void joinRing(ChordMessageInterface s) throws RemoteException {
+    public void joinRing(ChordMessageInterface s) {
         predecessor = null;
         successor = s;
     }
@@ -354,7 +345,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 
             for (File file : files) {
                 try {
-                    long guidObject = Long.valueOf(file.getName());
+                    long guidObject = Long.parseLong(file.getName());
                     // If the guidObject is less than the new predecessor
                     if (!isKeyInSemiCloseInterval(guidObject, j.getId(), getId())) {
                         predecessor.put(guidObject, new RemoteInputFileStream(file.getPath(), true));
@@ -398,7 +389,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                 }
             }
         } catch (RemoteException | NullPointerException e) {
-            // System.out.println(e.message());
             e.printStackTrace();
         }
     }
@@ -432,13 +422,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
 
         if (successor == null) {
-            try {
-                for (int i = 1; i < M; ++i) {
-                    joinRing(finger[i]);
-                    break;
-                }
-            } catch (Exception e) {
-
+            for (int i = 1; i < M; ++i) {
+                joinRing(finger[i]);
+                break;
             }
         }
     }
@@ -463,7 +449,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 
                     for (File file : files) {
                         try {
-                            long guidObject = Long.valueOf(file.getName());
+                            long guidObject = Long.parseLong(file.getName());
                             suc.put(guidObject, new RemoteInputFileStream(file.getPath()));
                             // file.delete();
                         } catch (Exception e) {
@@ -474,8 +460,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                     // happens sometimes when a new file is added during the loop
                 }
             }
-        } catch (RemoteException e) {
-
+        } catch (RemoteException ignored) {
         }
     }
 

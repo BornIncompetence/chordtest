@@ -22,42 +22,31 @@ public class MusicServices {
     public Gson gson = new Gson();
 
     public int library_size;
+
     public MusicServices(DFS dfs) {
         this.dfs = dfs;
         this.library_size = 0;
     }
 
-    public Music[] loadSongs(String asdf) throws Exception {
+    public Music[] loadSongs(String asdf) {
         if (library == null) {
             loadLibrary();
         }
         return library;
     }
-/*
-    public void updateLibrarySize(){
-        RemoteInputFileStream rifs;
-        int numOfPages = 0;
-        try {
-            FilesJson files = dfs.readMetaData();
-            for(int i = 0; i < files.getNumOfFilesInMetadata(); i++){
-                if(files.getFile(i).getName().equals("music")){
-                    numOfPages = files.getFile(i).getNumOfPages();
-                    break;
-                }               
-            }
-            for(int i = 0; i < numOfPages; i++){
-                rifs = dfs.read("music", i);
-                rifs.connect();
-                InputStreamReader reader = new InputStreamReader(rifs);
-                String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
-                Music[] musics = gson.fromJson(json, Music[].class);
-                library_size += musics.length;
-            }           
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    */
+
+    /*
+     * public void updateLibrarySize(){ RemoteInputFileStream rifs; int numOfPages =
+     * 0; try { FilesJson files = dfs.readMetaData(); for(int i = 0; i <
+     * files.getNumOfFilesInMetadata(); i++){
+     * if(files.getFile(i).getName().equals("music")){ numOfPages =
+     * files.getFile(i).getNumOfPages(); break; } } for(int i = 0; i < numOfPages;
+     * i++){ rifs = dfs.read("music", i); rifs.connect(); InputStreamReader reader =
+     * new InputStreamReader(rifs); String json = new
+     * BufferedReader(reader).lines().collect(Collectors.joining("\n")); Music[]
+     * musics = gson.fromJson(json, Music[].class); library_size += musics.length; }
+     * } catch (Exception e) { e.printStackTrace(); } }
+     */
     public int querySize(String query) {
         if (query.isBlank()) {
             return library.length;
@@ -97,13 +86,13 @@ public class MusicServices {
         int numOfPages = 0;
         try {
             FilesJson files = dfs.readMetaData();
-            for(int i = 0; i < files.getNumOfFilesInMetadata(); i++){
-                if(files.getFile(i).getName().equals("music")){
+            for (int i = 0; i < files.getNumOfFilesInMetadata(); i++) {
+                if (files.getFile(i).getName().equals("music")) {
                     numOfPages = files.getFile(i).getNumOfPages();
                     break;
-                }               
+                }
             }
-            for(int i = 0; i < numOfPages; i++){
+            for (int i = 0; i < numOfPages; i++) {
                 rifs = dfs.read("music", i);
                 rifs.connect();
                 InputStreamReader reader = new InputStreamReader(rifs);
@@ -113,7 +102,7 @@ public class MusicServices {
                     music.getSong().setArtist(music.getArtist().getName());
                 }
                 library = ArrayUtils.addAll(library, musics);
-            }           
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

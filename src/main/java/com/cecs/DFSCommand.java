@@ -1,17 +1,12 @@
 package com.cecs;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 
 import com.cecs.DFS.DFS;
 import com.cecs.DFS.RemoteInputFileStream;
-import com.cecs.Models.Music;
 import com.cecs.Server.Communication;
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
 
 /**
  * Hello world!
@@ -19,7 +14,7 @@ import com.google.gson.stream.JsonReader;
 public final class DFSCommand {
     DFS dfs;
 
-    public DFSCommand(int p, int portToJoin) throws Exception {
+    public DFSCommand(int p, int portToJoin) throws IOException {
         dfs = new DFS(p);
 
         if (portToJoin > 0) {
@@ -52,7 +47,7 @@ public final class DFSCommand {
             if (result[0].equals("read")) {
                 dfs.read(result[1], Integer.parseInt(result[2]));
             }
-            if (result[0].equals("head")) { 
+            if (result[0].equals("head")) {
                 dfs.head(result[1]);
             }
             if (result[0].equals("tail")) {
@@ -66,7 +61,7 @@ public final class DFSCommand {
             if (result[0].equals("move")) {
                 dfs.move(result[1], result[2]);
             }
-            if(result[0].equals("server")){
+            if (result[0].equals("server")) {
                 var comm = new Communication(5500, 32768, dfs);
                 try {
                     comm.openConnection();
@@ -85,24 +80,19 @@ public final class DFSCommand {
      * Says hello to the world.
      * 
      * @param args The arguments of the program.
-     * @throws Exception
-     * @throws NumberFormatException
+     * @throws IOException              If IO error occurs within the command loop
+     * @throws IllegalArgumentException If the incorrect parameters are provided
+     * @throws NumberFormatException    If number arguments cannot be parsed
      */
-    public static void main(String[] args) throws NumberFormatException, Exception {
-        Gson gson = new Gson();
-        RemoteInputFileStream in = new RemoteInputFileStream("music.json", false);
-        in.connect();
-        Reader targetReader = new InputStreamReader(in);
-        JsonReader jreader = new JsonReader(targetReader);
-        System.out.println("Reading music successful!");
+    public static void main(String[] args) throws IOException, IllegalArgumentException, NumberFormatException {
 
         if (args.length < 1) {
             throw new IllegalArgumentException("Parameter: <port> <portToJoin>");
         }
         if (args.length > 1) {
-            DFSCommand dfsCommand = new DFSCommand(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+            new DFSCommand(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
         } else {
-            DFSCommand dfsCommand = new DFSCommand(Integer.parseInt(args[0]), 0);
+            new DFSCommand(Integer.parseInt(args[0]), 0);
         }
     }
 }

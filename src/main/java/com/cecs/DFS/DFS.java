@@ -1,5 +1,7 @@
 package com.cecs.DFS;
 
+import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.nio.file.*;
 import java.math.BigInteger;
@@ -7,6 +9,8 @@ import java.security.*;
 import java.time.LocalDateTime;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 
 /* JSON Format
 
@@ -32,23 +36,24 @@ import com.google.gson.Gson;
 
 public class DFS {
 
-    public class PagesJson { //This might be the class that holds the pages of the music.json or users.json?
-        Long guid;
-        Long size;
+    public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
+        long guid;
+        long size;
         String createTS;
         String readTS;
         String writeTS;
         int referenceCount;
 
-        public PagesJson(){
-            this.guid = (long) 0;
-            this.size = (long) 0;
+        public PagesJson() {
+            this.guid = 0L;
+            this.size = 0L;
             this.createTS = "0";
             this.readTS = "0";
             this.writeTS = "0";
             this.referenceCount = 0;
         }
-        public PagesJson(Long guid, Long size, String createTS, String readTS, String writeTS, int referenceCount) {
+
+        public PagesJson(long guid, long size, String createTS, String readTS, String writeTS, int referenceCount) {
             this.guid = guid;
             this.size = size;
             this.createTS = createTS;
@@ -56,48 +61,59 @@ public class DFS {
             this.writeTS = writeTS;
             this.referenceCount = referenceCount;
         }
+
         // getters
-        public Long getGuid(){
+        public long getGuid() {
             return this.guid;
         }
-        public Long getSize(){
+
+        public long getSize() {
             return this.size;
         }
-        public String getCreateTS(){
+
+        public String getCreateTS() {
             return this.createTS;
         }
-        public String getReadTS(){
+
+        public String getReadTS() {
             return this.readTS;
         }
-        public String getWriteTS(){
+
+        public String getWriteTS() {
             return this.writeTS;
         }
-        public int getReferenceCount(){
+
+        public int getReferenceCount() {
             return this.referenceCount;
         }
 
         // setters
-        public void setGuid(Long guid){
+        public void setGuid(long guid) {
             this.guid = guid;
         }
-        public void setSize(Long size){
+
+        public void setSize(long size) {
             this.size = size;
         }
-        public void setCreateTS(String createTS){
+
+        public void setCreateTS(String createTS) {
             this.createTS = createTS;
         }
-        public void setReadTS(String readTS){
+
+        public void setReadTS(String readTS) {
             this.readTS = readTS;
         }
-        public void setWriteTS(String writeTS){
+
+        public void setWriteTS(String writeTS) {
             this.writeTS = writeTS;
         }
 
     };
 
-    public class FileJson { //Structure for all the files that will be listed in metadata? eg imperial.mp3 or song files
+    public class FileJson { // Structure for all the files that will be listed in metadata? eg imperial.mp3
+                            // or song files
         String name;
-        Long size; // Total size of the file, calculated from adding each part from every node
+        long size; // Total size of the file, calculated from adding each part from every node
         ArrayList<PagesJson> pages;
         String creationTS;
         String readTS;
@@ -106,7 +122,7 @@ public class DFS {
         int maxPageSize; // The largest size of a page of the file
 
         public FileJson() {
-            this.size = (long) 0;
+            this.size = 0L;
             pages = new ArrayList<PagesJson>();
             creationTS = LocalDateTime.now().toString();
             readTS = "0";
@@ -114,76 +130,89 @@ public class DFS {
             numOfPages = 0;
             maxPageSize = 0;
         }
+
         // getters
-        public String getName(){
+        public String getName() {
             return this.name;
         }
-        public Long getSize(){
+
+        public long getSize() {
             return this.size;
         }
-        public int getNumOfPages(){
+
+        public int getNumOfPages() {
             return this.numOfPages;
         }
-        public PagesJson getPage(int index){
+
+        public PagesJson getPage(int index) {
             return this.pages.get(index);
         }
+
         // setters
-        public void setName(String newName){
+        public void setName(String newName) {
             this.name = newName;
         }
-        public void setSize(Long newSize){
+
+        public void setSize(long newSize) {
             this.size = newSize;
         }
-        public void setNumOfPages(int newNumOfPages){
+
+        public void setNumOfPages(int newNumOfPages) {
             this.numOfPages = newNumOfPages;
         }
-        public void setReadTS(String readTS){
+
+        public void setReadTS(String readTS) {
             this.readTS = readTS;
         }
-        public void setWriteTS(String writeTS){
+
+        public void setWriteTS(String writeTS) {
             this.writeTS = writeTS;
         }
-        public void compareAndSetMaxPageSize(int newSize){
-            if(this.maxPageSize < newSize){
+
+        public void compareAndSetMaxPageSize(int newSize) {
+            if (this.maxPageSize < newSize) {
                 this.maxPageSize = newSize;
             }
         }
-        public void addNewPage(PagesJson newPageToAdd){
+
+        public void addNewPage(PagesJson newPageToAdd) {
             this.pages.add(newPageToAdd);
         }
     };
 
-    public class FilesJson {//This is for the entire metadata file?
+    public class FilesJson {// This is for the entire metadata file?
         List<FileJson> file;
+
         public FilesJson() {
             file = new ArrayList<FileJson>();
         }
 
         // getters
-        public FileJson getFile(int index){
+        public FileJson getFile(int index) {
             return file.get(index);
         }
 
-        public int getNumOfFilesInMetadata(){
+        public int getNumOfFilesInMetadata() {
             return file.size();
         }
-        
-        public Boolean doesFileExist(String fileName){
-            for(int i = 0; i < file.size(); i++){
-                if(file.get(i).getName().equals(fileName)){
+
+        public Boolean doesFileExist(String fileName) {
+            for (int i = 0; i < file.size(); i++) {
+                if (file.get(i).getName().equals(fileName)) {
                     return true;
                 }
             }
             return false;
         }
+
         // setters
-        public void addFile(FileJson fileToAdd){
+        public void addFile(FileJson fileToAdd) {
             file.add(fileToAdd);
         }
-        
-        public void removeFile(String fileName){
-            for(int i = 0; i < file.size(); i++){
-                if(file.get(i).getName().equals(fileName)){
+
+        public void removeFile(String fileName) {
+            for (int i = 0; i < file.size(); i++) {
+                if (file.get(i).getName().equals(fileName)) {
                     file.remove(i);
                 }
             }
@@ -206,7 +235,7 @@ public class DFS {
         return 0;
     }
 
-    public DFS(int port) throws Exception {
+    public DFS(int port) throws IOException {
 
         this.port = port;
         long guid = md5("" + port);
@@ -225,7 +254,7 @@ public class DFS {
      * Join the chord
      *
      */
-    public void join(String Ip, int port) throws Exception {
+    public void join(String Ip, int port) throws RemoteException {
         chord.joinRing(Ip, port);
         chord.print();
     }
@@ -234,7 +263,7 @@ public class DFS {
      * leave the chord
      *
      */
-    public void leave() throws Exception {
+    public void leave() {
         chord.leave();
     }
 
@@ -242,7 +271,7 @@ public class DFS {
      * print the status of the peer in the chord
      *
      */
-    public void print() throws Exception {
+    public void print() {
         chord.print();
     }
 
@@ -250,10 +279,10 @@ public class DFS {
      * readMetaData read the metadata from the chord
      *
      */
-    public FilesJson readMetaData() throws Exception {
+    public FilesJson readMetaData() {
         FilesJson filesJson = null;
         try {
-            Gson gson = new Gson();
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
             long guid = md5("Metadata");
 
             System.out.println("GUID " + guid);
@@ -263,9 +292,9 @@ public class DFS {
             Scanner scan = new Scanner(metadataraw);
             scan.useDelimiter("\\A");
             String strMetaData = scan.next();
-            System.out.println(strMetaData);
+            System.out.println(gson.toJson(JsonParser.parseString(strMetaData)));
             filesJson = gson.fromJson(strMetaData, FilesJson.class);
-        } catch (Exception ex) {
+        } catch (RemoteException e) {
             filesJson = new FilesJson();
         }
         return filesJson;
@@ -275,7 +304,7 @@ public class DFS {
      * writeMetaData write the metadata back to the chord
      *
      */
-    public void writeMetaData(FilesJson filesJson) throws Exception {
+    public void writeMetaData(FilesJson filesJson) throws RemoteException {
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
 
@@ -287,10 +316,10 @@ public class DFS {
      * Change Name
      *
      */
-    public void move(String oldName, String newName) throws Exception {
+    public void move(String oldName, String newName) throws RemoteException {
         FilesJson metadata = this.readMetaData();
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(oldName)){
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(oldName)) {
                 metadata.getFile(i).setName(newName);
             }
         }
@@ -299,25 +328,22 @@ public class DFS {
 
     /**
      * List the files in the system
-     *
-     * @param filename Name of the file
      */
-    public String lists() throws Exception {
+    public String lists() {
         FilesJson fileJson = readMetaData();
         String listOfFiles = "";
-        for(int i = 0; i < fileJson.getNumOfFilesInMetadata(); i++){
+        for (int i = 0; i < fileJson.getNumOfFilesInMetadata(); i++) {
             listOfFiles = listOfFiles + fileJson.getFile(i).getName() + "\n";
         }
         return listOfFiles;
     }
 
     /**
-     * create an empty file
-     * Must run this function before appending any files
+     * create an empty file Must run this function before appending any files
      *
-     * @param filename Name of the file
+     * @param fileName Name of the file
      */
-    public void create(String fileName) throws Exception {
+    public void create(String fileName) throws RemoteException {
         FilesJson metadata = this.readMetaData();
         FileJson newFile = new FileJson();
         newFile.setName(fileName);
@@ -328,15 +354,15 @@ public class DFS {
     /**
      * delete file
      *
-     * @param filename Name of the file
+     * @param fileName Name of the file
      */
-    public void delete(String fileName) throws Exception {
+    public void delete(String fileName) throws RemoteException {
         FilesJson metadata = this.readMetaData();
         metadata.removeFile(fileName);
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(fileName)){
-                for(int j = 0; j < metadata.getFile(i).getNumOfPages(); j++){
-                    Long guidOfPageJsonToDelete = metadata.getFile(i).getPage(j).getGuid();
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(fileName)) {
+                for (int j = 0; j < metadata.getFile(i).getNumOfPages(); j++) {
+                    long guidOfPageJsonToDelete = metadata.getFile(i).getPage(j).getGuid();
                     ChordMessageInterface nodeThatHostsFile = chord.locateSuccessor(guidOfPageJsonToDelete);
                     nodeThatHostsFile.delete(guidOfPageJsonToDelete);
                 }
@@ -348,15 +374,15 @@ public class DFS {
     /**
      * Read block pageNumber of fileName
      *
-     * @param filename   Name of the file
+     * @param fileName   Name of the file
      * @param pageNumber number of block.
      */
-    public RemoteInputFileStream read(String fileName, int pageNumber) throws Exception {
+    public RemoteInputFileStream read(String fileName, int pageNumber) throws RemoteException {
         FilesJson metadata = this.readMetaData();
         PagesJson pagesJson = null;
         RemoteInputFileStream rifs = null;
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(fileName)){
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(fileName)) {
                 System.out.println("found file");
                 pagesJson = metadata.getFile(i).getPage(pageNumber);
                 metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
@@ -375,40 +401,42 @@ public class DFS {
      * @param filename Name of the file
      * @param data     RemoteInputStream.
      */
-    public void append(String filename, RemoteInputFileStream data) throws Exception {
+    public void append(String filename, RemoteInputFileStream data) throws RemoteException {
         FilesJson metadata = this.readMetaData();
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){ //for loop to loop through each file in metadata
-            if(metadata.getFile(i).getName().equals(filename)){ //found the correct file to append a page 
-                //code to update the metadata of the specified file
+        // For each file in metadata
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            // Append a page if the name matches
+            if (metadata.getFile(i).getName().equals(filename)) {
+                // code to update the metadata of the specified file
                 metadata.getFile(i).setSize(metadata.getFile(i).getSize() + (long) data.available());
                 metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
                 metadata.getFile(i).setWriteTS(LocalDateTime.now().toString());
                 metadata.getFile(i).setNumOfPages(metadata.getFile(i).getNumOfPages() + 1);
                 metadata.getFile(i).compareAndSetMaxPageSize(data.available());
-                //code to add to file to chord
-                Long guidOfNewFile = md5(filename + LocalDateTime.now().toString());
+                // code to add to file to chord
+                long guidOfNewFile = md5(filename + LocalDateTime.now().toString());
                 ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
                 nodeToHostFile.put(guidOfNewFile, data);
-                PagesJson newPageToAdd = new PagesJson(guidOfNewFile, (long) data.available(), LocalDateTime.now().toString(), 
-                                                       LocalDateTime.now().toString(), LocalDateTime.now().toString(), 0);
+                var now = LocalDateTime.now().toString();
+                PagesJson newPageToAdd = new PagesJson(guidOfNewFile, data.available(), now, now, now, 0);
                 metadata.getFile(i).addNewPage(newPageToAdd);
             }
         }
-        writeMetaData(metadata); //save changes to metadata file
+        writeMetaData(metadata); // save changes to metadata file
     }
 
     /**
      * Reads the first page of the file
      * 
-     * @param fileName   Name of the file
-     * @return           First index of the pages in the file
-     * @throws Exception
+     * @param fileName Name of the file
+     * @return First index of the pages in the file
+     * 
      */
-    public RemoteInputFileStream head(String fileName) throws Exception{
+    public RemoteInputFileStream head(String fileName) throws RemoteException {
         FilesJson metadata = this.readMetaData();
         PagesJson pagesJson = null;
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(fileName)){
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(fileName)) {
                 pagesJson = metadata.getFile(i).getPage(0);
                 metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
             }
@@ -416,22 +444,21 @@ public class DFS {
         writeMetaData(metadata);
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
-        RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
-        return blockData;
+        return peer.get(pagesJson.getGuid());
     }
 
     /**
      * Reads the last page of the file
      * 
-     * @param filename   Name of the file
-     * @return           Last index of the pages in the file
-     * @throws Exception
+     * @param filename Name of the file
+     * @return Last index of the pages in the file
+     * 
      */
-    public RemoteInputFileStream tail(String filename) throws Exception{
+    public RemoteInputFileStream tail(String filename) throws RemoteException {
         FilesJson metadata = this.readMetaData();
         PagesJson pagesJson = null;
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(filename)){
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(filename)) {
                 pagesJson = metadata.getFile(i).getPage(metadata.getFile(i).getNumOfPages() - 1);
                 metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
             }
@@ -439,41 +466,40 @@ public class DFS {
         writeMetaData(metadata);
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
-        RemoteInputFileStream blockData = peer.get(pagesJson.getGuid());
-        return blockData;
+        return peer.get(pagesJson.getGuid());
     }
 
-	public int GetNumberOfPagesForFile(String filename) throws Exception {
-		FilesJson metadata = this.readMetaData();
+    public int GetNumberOfPagesForFile(String filename) {
+        FilesJson metadata = this.readMetaData();
         int numberOfPagesInFile = 0;
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(filename)){
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(filename)) {
                 numberOfPagesInFile = metadata.getFile(i).getNumOfPages();
             }
         }
         return numberOfPagesInFile;
     }
-    
-    public byte[] GetSong(String filename, long offset, int fragmentSize) throws Exception {
+
+    public byte[] GetSong(String filename, long offset, int fragmentSize) throws RemoteException {
         FilesJson metadata = this.readMetaData();
         byte[] byteArrayOfSong = null;
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(filename)){
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(filename)) {
                 System.out.println("Found song");
-                Long guidOfSong = metadata.getFile(i).getPage(0).getGuid();
+                long guidOfSong = metadata.getFile(i).getPage(0).getGuid();
                 ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfSong);
                 byteArrayOfSong = nodeToHostFile.get(guidOfSong, offset, fragmentSize);
             }
         }
         return byteArrayOfSong;
-    } 
+    }
 
-    public int getSongSize(String filename) throws Exception {
+    public long getSongSize(String filename) {
         FilesJson metadata = this.readMetaData();
-        int size = 0;
-        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
-            if(metadata.getFile(i).getName().equals(filename)){
-                size = metadata.getFile(i).getSize().intValue();
+        long size = 0;
+        for (int i = 0; i < metadata.getNumOfFilesInMetadata(); i++) {
+            if (metadata.getFile(i).getName().equals(filename)) {
+                size = metadata.getFile(i).getSize();
             }
         }
         return size;
