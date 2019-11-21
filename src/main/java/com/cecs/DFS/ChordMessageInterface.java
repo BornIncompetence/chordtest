@@ -28,4 +28,6 @@ public interface ChordMessageInterface extends Remote {
     byte[] get(long guidObject, long offset, int len) throws RemoteException;
 
     void delete(long guidObject) throws RemoteException;
+
+    String search(long guidObject, String query) throws RemoteException;
 }

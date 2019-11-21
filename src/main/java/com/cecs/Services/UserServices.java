@@ -163,8 +163,9 @@ public class UserServices {
     private User[] loadUsers() throws RemoteException {
         RemoteInputFileStream rifs;
         rifs = dfs.read("users", 0);
-        if (rifs == null)
+        if (rifs == null) {
             return null;
+        }
         rifs.connect();
         InputStreamReader reader = new InputStreamReader(rifs);
         String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));

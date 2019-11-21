@@ -6,7 +6,10 @@ import java.io.InputStreamReader;
 
 import com.cecs.DFS.DFS;
 import com.cecs.DFS.RemoteInputFileStream;
+import com.cecs.Models.Music;
 import com.cecs.Server.Communication;
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
 
 /**
  * Hello world!
@@ -83,7 +86,6 @@ public final class DFSCommand {
      * @throws NumberFormatException    If number arguments cannot be parsed
      */
     public static void main(String[] args) throws IOException, IllegalArgumentException, NumberFormatException {
-
         if (args.length < 1) {
             throw new IllegalArgumentException("Parameter: <port> <portToJoin>");
         }

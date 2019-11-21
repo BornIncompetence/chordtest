@@ -11,7 +11,10 @@ package com.cecs.DFS;
 import java.rmi.*;
 import java.rmi.registry.*;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.io.*;
+import com.cecs.Models.Music;
+import com.google.gson.Gson;
 
 /**
  * Chord extends from UnicastRemoteObject to support RMI. It implements the
@@ -219,6 +222,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
         return successor;
     }
+    
 
     /**
      * Returns the closest preceding node for the key
@@ -491,5 +495,35 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         } catch (RemoteException e) {
             System.out.println("Cannot retrive id of successor or predecessor");
         }
+    }
+
+    public String search(long guidObject, String query) throws IOException, RemoteException
+    {
+        System.out.println("Start searching");
+        List<Music> filteredMusics = new ArrayList<>();
+        Gson gson = new Gson();
+        try{
+            RemoteInputFileStream rifs;
+            rifs = this.get(guidObject);
+            rifs.connect();
+            InputStreamReader reader = new InputStreamReader(rifs);
+            String json = new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+            Music[] musics = gson.fromJson(json, Music[].class);
+            for (var music : musics) {
+                music.getSong().setArtist(music.getArtist().getName());
+            }
+            System.out.println(musics.toString());
+            if (query.isBlank()) {
+                return musics.toString();
+            }
+            filteredMusics = Arrays.stream(musics)
+                    .filter(music -> music.getArtist().toString().toLowerCase().contains(query)
+                            || music.getRelease().toString().toLowerCase().contains(query)
+                            || music.getSong().toString().toLowerCase().contains(query))
+                    .collect(Collectors.toList());
+        }catch (Exception e){
+
+        }
+        return filteredMusics.toString();
     }
 }
