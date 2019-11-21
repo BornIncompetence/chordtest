@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
 
 /* JSON Format
 {
@@ -295,7 +296,7 @@ public class DFS {
             Scanner scan = new Scanner(rawMetadata);
             scan.useDelimiter("\\A");
             String strMetaData = scan.next();
-            // System.out.println(this.gson.toJson(JsonParser.parseString(strMetaData)))
+            System.out.println(this.gson.toJson(JsonParser.parseString(strMetaData)));
             filesJson = gson.fromJson(strMetaData, FilesJson.class);
         } catch (RemoteException | NoSuchElementException e) {
             filesJson = new FilesJson();

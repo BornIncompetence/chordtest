@@ -16,11 +16,15 @@ public class MusicServices {
     public DFS dfs;
     public Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    public int library_size;
+    public int listSize;
 
     public MusicServices(DFS dfs) {
         this.dfs = dfs;
-        this.library_size = 0;
+        this.listSize = 0;
+    }
+
+    public int getListSize() {
+        return listSize;
     }
 
     public Music[] loadChunk(int start, int end, String query) {
@@ -35,39 +39,33 @@ public class MusicServices {
                 long guid = mf.getPage(i).getGuid();
                 var peer = dfs.getChord().locateSuccessor(guid);
                 int idx = i;
-                threads[idx] = new Thread() {
-                    public void run() {
-                        try {
-                            System.out.println("Enter thread");
-                            String json = peer.search(guid, query);
-                            musics[idx] = gson.fromJson(json, Music[].class);
-
-                        } catch (Exception e) {
-                            System.out.println("in Thread " + e);
-                            // TODO: handle exception
-                        }
+                threads[idx] = new Thread(() -> {
+                    try {
+                        String json = peer.search(guid, query);
+                        musics[idx] = gson.fromJson(json, Music[].class);
+                    } catch (Exception e) {
+                        // TODO: handle exception
                     }
-                };
-                // Runtime.getRuntime().addShutdownHook(threads[idx]);
-                threads[idx].start();
-
+                });
             }
-            System.out.println("test 1");
+
+            for (Thread t : threads) {
+                t.start();
+                t.join();
+            }
             for (Thread t : threads) {
                 t.join();
             }
-            System.out.println("test 2");
+
             for (Music[] musicList : musics) {
-                System.out.println(musicList.length);
                 list.addAll(Arrays.asList(musicList));
             }
 
-            System.out.println("test 3");
         } catch (Exception e) {
             // TODO: handle exception
-            System.out.println("in loadChunk " + e);
         }
         var toIndex = Integer.min(end, list.size());
+        listSize = list.size();
         return list.subList(start, toIndex).toArray(new Music[0]);
     }
 }
