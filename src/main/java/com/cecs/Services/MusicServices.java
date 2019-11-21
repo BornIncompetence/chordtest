@@ -1,19 +1,11 @@
 package com.cecs.Services;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import com.cecs.DFS.Chord;
-import com.cecs.DFS.ChordMessageInterface;
 import com.cecs.DFS.DFS;
-import com.cecs.DFS.RemoteInputFileStream;
 import com.cecs.DFS.DFS.FileJson;
-import com.cecs.DFS.DFS.FilesJson;
 import com.cecs.Models.Music;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -40,7 +32,7 @@ public class MusicServices {
             Thread[] threads = new Thread[numOfPages];
             Music[][] musics = new Music[numOfPages][];
             for (int i = 0; i < numOfPages; i++) {
-                Long guid = mf.getPage(i).getGuid();
+                long guid = mf.getPage(i).getGuid();
                 var peer = dfs.getChord().locateSuccessor(guid);
                 int idx = i;
                 threads[idx] = new Thread() {

@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import java.io.*;
 import com.cecs.Models.Music;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * Chord extends from UnicastRemoteObject to support RMI. It implements the
@@ -222,7 +223,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
         return successor;
     }
-    
 
     /**
      * Returns the closest preceding node for the key
@@ -497,12 +497,11 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
-    public String search(long guidObject, String query) throws IOException, RemoteException
-    {
+    public String search(long guidObject, String query) {
         System.out.println("Start searching");
         List<Music> filteredMusics = new ArrayList<>();
-        Gson gson = new Gson();
-        try{
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try {
             RemoteInputFileStream rifs;
             rifs = this.get(guidObject);
             rifs.connect();
@@ -521,7 +520,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                             || music.getRelease().toString().toLowerCase().contains(query)
                             || music.getSong().toString().toLowerCase().contains(query))
                     .collect(Collectors.toList());
-        }catch (Exception e){
+        } catch (Exception ignored) {
 
         }
         return filteredMusics.toString();
