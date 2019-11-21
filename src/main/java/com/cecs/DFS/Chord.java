@@ -519,8 +519,8 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                             || music.getRelease().toString().toLowerCase().contains(query)
                             || music.getSong().toString().toLowerCase().contains(query))
                     .collect(Collectors.toList());
-        } catch (Exception ignored) {
-
+        } catch (Exception e) {
+            System.out.println(e);
         }
         return gson.toJson(filteredMusics);
     }
