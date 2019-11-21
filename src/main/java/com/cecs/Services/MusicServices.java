@@ -1,9 +1,6 @@
 package com.cecs.Services;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 
 import com.cecs.DFS.DFS;
@@ -36,21 +33,19 @@ public class MusicServices {
             FileJson mf = dfs.searchFile("music");
             int numOfPages = mf.getNumOfPages();
             Thread[] threads = new Thread[numOfPages];
-            
-            for(int i = 0; i < numOfPages; i++){              
-                Long guid = mf.getPage(i).getGuid();
+
+            for (int i = 0; i < numOfPages; i++) {
+                long guid = mf.getPage(i).getGuid();
                 var peer = dfs.getChord().locateSuccessor(guid);
-                threads[i] = new Thread(){
-                    public void run(){
-                        try { 
-                            String json = peer.search(guid, query);
-                            sem.acquire();
-                            musics.addAll(Arrays.asList(gson.fromJson(json, Music[].class)));      
-                            sem.release();                 
-                        } catch (Exception e) {
-                            //TODO: handle exception
-                            System.out.println(e);
-                        }
+                threads[i] = new Thread(() -> {
+                    try {
+                        String json = peer.search(guid, query);
+                        sem.acquire();
+                        musics.addAll(Arrays.asList(gson.fromJson(json, Music[].class)));
+                        sem.release();
+                    } catch (Exception e) {
+                        // TODO: handle exception
+                        e.printStackTrace();
                     }
                 });
             }
@@ -59,12 +54,12 @@ public class MusicServices {
                 t.start();
                 t.join();
             }
-            
-            //Sort music by song's names
-            Collections.sort(musics, (a,b) -> {return a.getSong().getTitle().compareTo(b.getSong().getTitle());});
+
+            // Sort music by song's names
+            musics.sort(Comparator.comparing(a -> a.getSong().getTitle()));
         } catch (Exception e) {
-            //TODO: handle exception
-            System.out.println(e);
+            // TODO: handle exception
+            e.printStackTrace();
         }
 
         var toIndex = Integer.min(end, musics.size());
