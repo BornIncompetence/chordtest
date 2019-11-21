@@ -1,81 +1,72 @@
 package com.cecs.Services;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.Semaphore;
 
-import com.cecs.DFS.Chord;
-import com.cecs.DFS.ChordMessageInterface;
 import com.cecs.DFS.DFS;
-import com.cecs.DFS.RemoteInputFileStream;
 import com.cecs.DFS.DFS.FileJson;
-import com.cecs.DFS.DFS.FilesJson;
 import com.cecs.Models.Music;
 import com.google.gson.Gson;
 
 
 public class MusicServices {
-    private Music[] library;
-    //private HashMap<String, List<Music>> queries = new HashMap<>();
     public DFS dfs;
     public Gson gson = new Gson();
-
-    public int library_size;
+    private  Semaphore sem;
+    public int listSize; // store current size of list
     public MusicServices(DFS dfs) {
         this.dfs = dfs;
-        this.library_size = 0;
+        this.listSize = 0;
+        this.sem = new Semaphore(1, true);
     }
-    
+    public int getListSize(){
+        return listSize;
+    }
+
+    /*Load some part of the music.json */
     public Music[] loadChunk(int start, int end, String query) {
         System.out.println("run loadChunk");
-        List<Music> list = new ArrayList<>();
+        List<Music> musics = new ArrayList<>();
         try {
             FileJson mf = dfs.searchFile("music");
             int numOfPages = mf.getNumOfPages();
             Thread[] threads = new Thread[numOfPages];
-            Music[][] musics = new Music[numOfPages][];
+            
             for(int i = 0; i < numOfPages; i++){              
                 Long guid = mf.getPage(i).getGuid();
                 var peer = dfs.getChord().locateSuccessor(guid);
-                int idx = i;
-                threads[idx] = new Thread(){
+                threads[i] = new Thread(){
                     public void run(){
                         try { 
-                            System.out.println("Enter thread");
                             String json = peer.search(guid, query);
-                            musics[idx] = gson.fromJson(json, Music[].class);
-                            
-                            
+                            sem.acquire();
+                            musics.addAll(Arrays.asList(gson.fromJson(json, Music[].class)));      
+                            sem.release();                 
                         } catch (Exception e) {
-                            System.out.println("in Thread " + e);
                             //TODO: handle exception
+                            System.out.println(e);
                         }
                     }
                 };
-                //Runtime.getRuntime().addShutdownHook(threads[idx]);
-                threads[idx].start();
-
             }
-            System.out.println("test 1");
+
             for(Thread t : threads){
+                t.start();
                 t.join();
             }
-            System.out.println("test 2");
-            for(Music[] musicList : musics){
-                System.out.println(musicList.length);
-                list.addAll(Arrays.asList(musicList));
-            }
-
-            System.out.println("test 3");
+            
+            //Sort music by song's names
+            Collections.sort(musics, (a,b) -> {return a.getSong().getTitle().compareTo(b.getSong().getTitle());});
         } catch (Exception e) {
             //TODO: handle exception
-            System.out.println("in loadChunk " + e);
+            System.out.println(e);
         }
-        var toIndex = Integer.min(end, list.size());
-        return list.subList(start, toIndex).toArray(new Music[0]);
+
+        var toIndex = Integer.min(end, musics.size());
+        listSize = musics.size();
+        return musics.subList(start, toIndex).toArray(new Music[0]);
     }
 }

@@ -265,7 +265,7 @@ public class DFS {
             Scanner scan = new Scanner(metadataraw);
             scan.useDelimiter("\\A");
             String strMetaData = scan.next();
-            //System.out.println(strMetaData);
+            System.out.println(strMetaData);
             filesJson = gson.fromJson(strMetaData, FilesJson.class);
         } catch (Exception ex) {
             filesJson = new FilesJson();
@@ -359,7 +359,6 @@ public class DFS {
         RemoteInputFileStream rifs = null;
         for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
             if(metadata.getFile(i).getName().equals(fileName)){
-                System.out.println("found file");
                 pagesJson = metadata.getFile(i).getPage(pageNumber);
                 metadata.getFile(i).setReadTS(LocalDateTime.now().toString());
                 ChordMessageInterface peer = chord.locateSuccessor(pagesJson.getGuid());

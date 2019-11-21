@@ -511,7 +511,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 
     public String search(long guidObject, String query) throws IOException, RemoteException
     {
-        System.out.println("Start searching");
         List<Music> filteredMusics = new ArrayList<>();
         Gson gson = new Gson();
         try{
@@ -523,10 +522,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             Music[] musics = gson.fromJson(json, Music[].class);
             for (var music : musics) {
                 music.getSong().setArtist(music.getArtist().getName());
+
             }
-            System.out.println(musics.toString());
             if (query.isBlank()) {
-                return musics.toString();
+                return gson.toJson(musics);
             }
             filteredMusics = Arrays.stream(musics)
                     .filter(music -> music.getArtist().toString().toLowerCase().contains(query)
@@ -534,8 +533,8 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                             || music.getSong().toString().toLowerCase().contains(query))
                     .collect(Collectors.toList());
         }catch (Exception e){
-
+            System.out.println(e);
         }
-        return filteredMusics.toString();
+        return gson.toJson(filteredMusics);
     }
 }
