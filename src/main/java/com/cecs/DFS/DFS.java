@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import com.google.gson.Gson;
 
 /* JSON Format
-
 {
     "file": [
         {
@@ -193,6 +192,9 @@ public class DFS {
     int port;
     Chord chord;
 
+    public ChordMessageInterface getChord(){
+        return chord;
+    }
     private long md5(String objectName) {
         try {
             MessageDigest m = MessageDigest.getInstance("MD5");
@@ -263,7 +265,7 @@ public class DFS {
             Scanner scan = new Scanner(metadataraw);
             scan.useDelimiter("\\A");
             String strMetaData = scan.next();
-            System.out.println(strMetaData);
+            //System.out.println(strMetaData);
             filesJson = gson.fromJson(strMetaData, FilesJson.class);
         } catch (Exception ex) {
             filesJson = new FilesJson();
@@ -477,5 +479,15 @@ public class DFS {
             }
         }
         return size;
+    }
+
+    public FileJson searchFile(String filename)  throws Exception{
+        FilesJson metadata = this.readMetaData();
+        for(int i = 0; i < metadata.getNumOfFilesInMetadata(); i++){
+            if(metadata.getFile(i).getName().equals(filename)){
+                return metadata.getFile(i);
+            }
+        }
+        return null;
     }
 }
