@@ -31,7 +31,7 @@ public class RemoteInputFileStream extends InputStream implements Serializable {
      */
     protected byte[] buf;
     /**
-     * It prepares for the nuext buffer. In UDP sockets you can read nextbufer while
+     * It prepares for the next buffer. In UDP sockets you can read nextBuf while
      * buf is in use
      */
     protected byte[] nextBuf;
@@ -39,6 +39,49 @@ public class RemoteInputFileStream extends InputStream implements Serializable {
      * It is used to read the buffer
      */
     protected int fragment = 0;
+
+    public RemoteInputFileStream(File file, boolean deleteAfter) throws IOException {
+        total = (int) file.length();
+        pos = 0;
+
+        var serverSocket = new ServerSocket(0);
+        this.port = serverSocket.getLocalPort();
+        this.IP = serverSocket.getInetAddress();
+
+        new Thread(() -> {
+            try {
+                Socket socket = serverSocket.accept();
+                OutputStream socketOutputStream = socket.getOutputStream();
+                FileInputStream is = new FileInputStream(file);
+                byte[] b = new byte[BUFFER_LENGTH];
+                while (is.available() > 0) {
+                    is.read(b);
+                    socketOutputStream.write(b);
+                }
+                is.close();
+                if (deleteAfter) {
+                    file.delete();
+                }
+            } catch (IOException e) {
+                System.err.format("File at %s does not exist in chord\n", file.getPath());
+            }
+        }).start();
+    }
+
+    /**
+     * Starts a server to provide the file
+     */
+    public RemoteInputFileStream(String pathName, boolean deleteAfter) throws IOException {
+        this(new File(pathName), deleteAfter);
+    }
+
+    public RemoteInputFileStream(String pathName) throws IOException {
+        this(new File(pathName));
+    }
+
+    public RemoteInputFileStream(File file) throws IOException {
+        this(file, false);
+    }
 
     /**
      * Connects to the server to provide the file
@@ -59,42 +102,6 @@ public class RemoteInputFileStream extends InputStream implements Serializable {
     }
 
     /**
-     * Starts a server to provide the file
-     */
-    public RemoteInputFileStream(String pathName, boolean deleteAfter) throws IOException {
-        File file = new File(pathName);
-        total = (int) file.length();
-        pos = 0;
-
-        ServerSocket serverSocket = new ServerSocket(0);
-        port = serverSocket.getLocalPort();
-        IP = serverSocket.getInetAddress();
-
-        new Thread(() -> {
-            try {
-                Socket socket = serverSocket.accept();
-                OutputStream socketOutputStream = socket.getOutputStream();
-                FileInputStream is = new FileInputStream(pathName);
-                byte[] b = new byte[BUFFER_LENGTH];
-                while (is.available() > 0) {
-                    is.read(b);
-                    socketOutputStream.write(b);
-                }
-                is.close();
-                if (deleteAfter) {
-                    file.delete();
-                }
-            } catch (IOException e) {
-                System.err.format("File at %s does not exist in chord\n", pathName);
-            }
-        }).start();
-    }
-
-    public RemoteInputFileStream(String pathName) throws IOException {
-        this(pathName, false);
-    }
-
-    /**
      * getNextBuff reads the buffer. It gets the data using the remote method
      * getSongChunk
      */
@@ -103,7 +110,6 @@ public class RemoteInputFileStream extends InputStream implements Serializable {
             try {
                 while ((total / BUFFER_LENGTH <= fragment || input.available() < BUFFER_LENGTH)
                         && (total / BUFFER_LENGTH > fragment || (input.available() < total % BUFFER_LENGTH))) {
-
                     Thread.sleep(1);
                 }
                 input.read(nextBuf);

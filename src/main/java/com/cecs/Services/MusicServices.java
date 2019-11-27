@@ -1,8 +1,10 @@
 package com.cecs.Services;
 
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
+import com.cecs.DFS.ChordMessageInterface;
 import com.cecs.DFS.DFS;
 import com.cecs.DFS.DFS.FileJson;
 import com.cecs.Models.Music;
@@ -31,35 +33,37 @@ public class MusicServices {
         List<Music> musics = new ArrayList<>();
         try {
             FileJson mf = dfs.searchFile("music");
-            int numOfPages = mf.getNumOfPages();
-            Thread[] threads = new Thread[numOfPages];
+            var pages = mf.getPages();
+            var threads = new LinkedList<Thread>();
 
-            for (int i = 0; i < numOfPages; i++) {
-                long guid = mf.getPage(i).getGuid();
-                var peer = dfs.getChord().locateSuccessor(guid);
-                threads[i] = new Thread(() -> {
+            for (var page : pages) {
+                long guid = page.getGuid();
+                ChordMessageInterface peer = dfs.getChord().locateSuccessor(guid);
+                threads.add(new Thread(() -> {
                     try {
                         String json = peer.search(guid, query);
                         sem.acquire();
                         musics.addAll(Arrays.asList(gson.fromJson(json, Music[].class)));
                         sem.release();
-                    } catch (Exception e) {
-                        // TODO: handle exception
-                        e.printStackTrace();
+                    } catch (RemoteException e) {
+                        System.err.println("Error occurred while searching for song in chord");
+                    } catch (InterruptedException e) {
+                        System.err.println(e.getMessage());
                     }
-                });
+                }));
+                threads.getLast().start();
             }
 
             for (Thread t : threads) {
-                t.start();
                 t.join();
             }
 
             // Sort music by song's names
             musics.sort(Comparator.comparing(a -> a.getSong().getTitle()));
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
+        } catch (RemoteException e) {
+            System.err.println("Error occurred while accessing resources from chord");
+        } catch (InterruptedException e) {
+            System.err.println("Thread execution timed out.");
         }
 
         var toIndex = Integer.min(end, musics.size());
