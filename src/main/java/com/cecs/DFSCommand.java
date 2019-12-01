@@ -1,17 +1,13 @@
 package com.cecs;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 
 import com.cecs.DFS.DFS;
 import com.cecs.DFS.RemoteInputFileStream;
-import com.cecs.Models.Music;
 import com.cecs.Server.Communication;
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
 
 /**
  * Hello world!
@@ -19,7 +15,7 @@ import com.google.gson.stream.JsonReader;
 public final class DFSCommand {
     DFS dfs;
 
-    public DFSCommand(int p, int portToJoin) throws Exception {
+    public DFSCommand(int p, int portToJoin) throws IOException {
         dfs = new DFS(p);
 
         if (portToJoin > 0) {
@@ -28,54 +24,86 @@ public final class DFSCommand {
         }
 
         BufferedReader buffer = new BufferedReader(new InputStreamReader(System.in));
-        String line = buffer.readLine();
-        while (!line.equals("quit")) {
-            String[] result = line.split("\\s");
-            if (result[0].equals("join") && result.length > 1) {
-                dfs.join("127.0.0.1", Integer.parseInt(result[1]));
+        for (String line = ""; !line.equals("quit"); line = buffer.readLine()) {
+            String[] args = line.split("\\s");
+            if (args[0].equals("join") && args.length > 1) {
+                try {
+                    dfs.join("127.0.0.1", Integer.parseInt(args[1]));
+                } catch (NumberFormatException e) {
+                    System.err.println("Could not parse Integer from " + args[1]);
+                }
             }
-            if (result[0].equals("print")) {
+            if (args[0].equals("print")) {
                 dfs.print();
             }
-            if (result[0].equals("ls")) {
-                System.out.println(dfs.lists());
+            if (args[0].equals("ls")) {
+                System.out.println(dfs.listFiles());
             }
-            if (result[0].equals("leave")) {
+            if (args[0].equals("leave")) {
                 dfs.leave();
             }
-            if (result[0].equals("touch")) {
-                dfs.create(result[1]);
+            if (args[0].equals("touch") && args.length > 1) {
+                dfs.create(args[1]);
             }
-            if (result[0].equals("delete")) {
-                dfs.delete(result[1]);
+            if (args[0].equals("delete") && args.length > 1) {
+                dfs.delete(args[1]);
             }
-            if (result[0].equals("read")) {
-                dfs.read(result[1], Integer.parseInt(result[2]));
-            }
-            if (result[0].equals("head")) { 
-                dfs.head(result[1]);
-            }
-            if (result[0].equals("tail")) {
-                dfs.tail(result[1]);
-            }
-            if (result[0].equals("append")) {
-                RemoteInputFileStream fileToAppend = new RemoteInputFileStream(result[2]);
-                dfs.append(result[1], fileToAppend);
-                System.out.println("Page added");
-            }
-            if (result[0].equals("move")) {
-                dfs.move(result[1], result[2]);
-            }
-            if(result[0].equals("server")){
-                var comm = new Communication(5500, 32768, dfs);
+            if (args[0].equals("read") && args.length > 2) {
                 try {
+                    dfs.read(args[1], Integer.parseInt(args[2]));
+                } catch (NumberFormatException e) {
+                    System.err.println("Could not parse Integer from " + args[2]);
+                }
+            }
+            if (args[0].equals("head") && args.length > 1) {
+                dfs.head(args[1]);
+            }
+            if (args[0].equals("tail") && args.length > 1) {
+                dfs.tail(args[1]);
+            }
+            if (args[0].equals("append") && args.length > 2) {
+                // Check if it is a directory
+                var file = new File(args[2]);
+                if (file.exists()) {
+                    if (file.isDirectory()) {
+                        // Add all files in directory
+                        var dir = file.listFiles();
+                        assert dir != null;
+
+                        for (var f : dir) {
+                            var appendant = new RemoteInputFileStream(f);
+                            dfs.append(args[1], appendant);
+                        }
+                        System.out.println("Pages added");
+                    } else {
+                        // Add single file
+                        var appendant = new RemoteInputFileStream(file);
+                        dfs.append(args[1], appendant);
+                        System.out.println("Page added");
+                    }
+                }
+            }
+            if (args[0].equals("move") && args.length > 2) {
+                dfs.move(args[1], args[2]);
+            }
+            if (args[0].equals("server")) {
+                var port = 5500;
+                try {
+                    if (args.length > 1) {
+                        port = Integer.parseInt(args[1]);
+                    }
+                    // Open server
+                    var comm = new Communication(port, 32768, dfs);
                     comm.openConnection();
                 } catch (IOException e) {
                     System.err.println("The server has encountered an error.");
                     e.printStackTrace();
+                } catch (NumberFormatException e) {
+                    System.err.println("Could not parse Integer from " + args[1]);
                 }
             }
-            line = buffer.readLine();
+            System.out.print("> ");
+            System.out.flush();
         }
         // User interface:
         // join, ls, touch, delete, read, tail, head, append, move
@@ -85,24 +113,18 @@ public final class DFSCommand {
      * Says hello to the world.
      * 
      * @param args The arguments of the program.
-     * @throws Exception
-     * @throws NumberFormatException
+     * @throws IOException              If IO error occurs within the command loop
+     * @throws IllegalArgumentException If the incorrect parameters are provided
+     * @throws NumberFormatException    If number arguments cannot be parsed
      */
-    public static void main(String[] args) throws NumberFormatException, Exception {
-        Gson gson = new Gson();
-        RemoteInputFileStream in = new RemoteInputFileStream("music.json", false);
-        in.connect();
-        Reader targetReader = new InputStreamReader(in);
-        JsonReader jreader = new JsonReader(targetReader);
-        System.out.println("Reading music successful!");
-
+    public static void main(String[] args) throws IOException, IllegalArgumentException, NumberFormatException {
         if (args.length < 1) {
             throw new IllegalArgumentException("Parameter: <port> <portToJoin>");
         }
         if (args.length > 1) {
-            DFSCommand dfsCommand = new DFSCommand(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+            new DFSCommand(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
         } else {
-            DFSCommand dfsCommand = new DFSCommand(Integer.parseInt(args[0]), 0);
+            new DFSCommand(Integer.parseInt(args[0]), 0);
         }
     }
 }

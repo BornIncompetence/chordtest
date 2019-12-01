@@ -73,8 +73,7 @@ public class Communication {
      */
     private String dispatch(String request) {
         var jsonReturn = new JsonObject();
-        var parser = new JsonParser();
-        var jsonRequest = parser.parse(request).getAsJsonObject();
+        var jsonRequest = JsonParser.parseString(request).getAsJsonObject();
 
         try {
             // Obtains the object pointing to SongServices

@@ -10,7 +10,7 @@ public class User implements Comparable<User> {
     public User(String name, String pass) {
         this.username = name;
         this.password = pass;
-        this.userPlaylists = new ArrayList<Playlist>();
+        this.userPlaylists = new ArrayList<>();
     }
 
     public Boolean containsPlaylist(String playlistName) {
