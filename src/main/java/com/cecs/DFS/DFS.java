@@ -35,15 +35,15 @@ import com.google.gson.GsonBuilder;
 public class DFS {
 
     public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
-        long guid;
+        private ArrayList<Long> guids;
         long size;
         String createTS;
         String readTS;
         String writeTS;
         int referenceCount;
 
-        public PagesJson(long guid, long size, String timestamp, int referenceCount) {
-            this.guid = guid;
+        public PagesJson(ArrayList<Long> guids, long size, String timestamp, int referenceCount) {
+            this.guids = guids;
             this.size = size;
             this.createTS = timestamp;
             this.readTS = timestamp;
@@ -52,8 +52,8 @@ public class DFS {
         }
 
         // getters
-        public long getGuid() {
-            return this.guid;
+        public ArrayList<Long> getGuids() {
+            return this.guids;
         }
     }
 
@@ -241,7 +241,9 @@ public class DFS {
             Scanner scan = new Scanner(rawMetadata);
             scan.useDelimiter("\\A");
             String strMetaData = scan.next();
+            System.out.println(strMetaData);
             filesJson = gson.fromJson(strMetaData, FilesJson.class);
+            scan.close();
         } catch (RemoteException | NoSuchElementException e) {
             System.out.println("Creating new file!");
             filesJson = new FilesJson();
@@ -303,11 +305,15 @@ public class DFS {
      * @param filename Name of the file
      */
     public void delete(String filename) throws RemoteException {
+        //TODO: add vote for consensus on transactions
         FilesJson metadata = this.readMetaData();
         for (var page : metadata.getFile(filename).pages) {
-            long deleteGuid = page.guid;
-            ChordMessageInterface peer = chord.locateSuccessor(deleteGuid);
-            peer.delete(deleteGuid);
+            ArrayList<Long> pageGuids = page.getGuids();
+            for(int i = 0; i < pageGuids.size(); i++){
+                long deleteGuid = pageGuids.get(i);
+                ChordMessageInterface peer = chord.locateSuccessor(deleteGuid);
+                peer.delete(deleteGuid);
+            }
         }
         metadata.removeFile(filename);
         writeMetaData(metadata);
@@ -318,19 +324,26 @@ public class DFS {
      *
      * @param filename   Name of the file
      * @param pageNumber number of block.
+     * @throws RemoteException
      */
     public RemoteInputFileStream read(String filename, int pageNumber) throws RemoteException {
+        RemoteInputFileStream rifs = null;
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
         file.readTS = now();
 
         PagesJson pagesJson = file.pages.get(pageNumber);
-        ChordMessageInterface peer = chord.locateSuccessor(pagesJson.guid);
-        RemoteInputFileStream rifs = peer.get(pagesJson.guid);
-
-        writeMetaData(metadata);
-        System.out.println(rifs);
+        ArrayList<Long> guidsOfPage = pagesJson.guids;
+        for(int i = 0; i < guidsOfPage.size(); i++){
+            ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
+            if(peer != null){
+                rifs = peer.get(guidsOfPage.get(i));
+                writeMetaData(metadata);
+                System.out.println(rifs);
+                i = 3;
+            }
+        }
         return rifs;
     }
 
@@ -341,6 +354,7 @@ public class DFS {
      * @param data     RemoteInputStream.
      */
     public void append(String filename, RemoteInputFileStream data) throws RemoteException {
+        //TODO: Vote on consensus
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
@@ -352,11 +366,15 @@ public class DFS {
         file.compareAndSetMaxPageSize(data.available());
 
         // Add file to chord
-        long guidOfNewFile = md5(filename + now());
-        ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
-        nodeToHostFile.put(guidOfNewFile, data); // Can possibly stall the entire program
-        PagesJson newPage = new PagesJson(guidOfNewFile, data.available(), now(), 0);
+        ArrayList<Long> fileGuids = new ArrayList<Long>();
+        for(int i = 0; i < 3; i++){
+            long guidOfNewFile = md5(filename + i + now());
+            fileGuids.add(guidOfNewFile);
+            ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
+            nodeToHostFile.put(guidOfNewFile, data); // Can possibly stall the entire program
+        }
 
+        PagesJson newPage = new PagesJson(fileGuids, data.available(), now(), 0);
         System.out.println("Adding file...");
         file.pages.add(newPage);
         writeMetaData(metadata);
@@ -369,21 +387,25 @@ public class DFS {
      * @return First index of the pages in the file
      */
     public RemoteInputFileStream head(String filename) throws RemoteException {
+        RemoteInputFileStream rifs = null;
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
         file.readTS = now();
+
         PagesJson pagesJson = file.pages.get(0);
 
-        writeMetaData(metadata);
-        long guid = md5("Metadata");
-        ChordMessageInterface peer = chord.locateSuccessor(guid);
-
-        if (pagesJson != null) {
-            return peer.get(pagesJson.guid);
-        } else {
-            throw new RemoteException("File not found!");
+        ArrayList<Long> guidsOfPage = pagesJson.guids;
+        for(int i = 0; i < guidsOfPage.size(); i++){
+            ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
+            if(peer != null){
+                rifs = peer.get(guidsOfPage.get(i));
+                writeMetaData(metadata);
+                System.out.println(rifs);
+                i = 3;
+            }
         }
+        return rifs;
     }
 
     /**
@@ -393,16 +415,24 @@ public class DFS {
      * @return Last index of the pages in the file
      */
     public RemoteInputFileStream tail(String filename) throws RemoteException {
+        RemoteInputFileStream rifs = null;
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
         file.readTS = now();
         PagesJson pagesJson = file.pages.get(file.pages.size() - 1);
 
-        writeMetaData(metadata);
-        long guid = md5("Metadata");
-        ChordMessageInterface peer = chord.locateSuccessor(guid);
-        return peer.get(pagesJson.guid);
+        ArrayList<Long> guidsOfPage = pagesJson.guids;
+        for(int i = 0; i < guidsOfPage.size(); i++){
+            ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
+            if(peer != null){
+                rifs = peer.get(guidsOfPage.get(i));
+                writeMetaData(metadata);
+                System.out.println(rifs);
+                i = 3;
+            }
+        }
+        return rifs;
     }
 
     public int getPageFilesize(String filename) throws RemoteException {
@@ -410,9 +440,16 @@ public class DFS {
     }
 
     public byte[] getSong(String filename, long offset, int fragmentSize) throws RemoteException {
-        long songGuid = this.readMetaData().getFile(filename).pages.get(0).guid;
-        ChordMessageInterface peer = chord.locateSuccessor(songGuid);
-        return peer.get(songGuid, offset, fragmentSize);
+        byte[] songBytes = null;
+        ArrayList<Long> guidsOfPage = this.readMetaData().getFile(filename).pages.get(0).guids;
+        for(int i = 0; i < guidsOfPage.size(); i++){
+            ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
+            if(peer != null){
+                songBytes = peer.get(guidsOfPage.get(i), offset, fragmentSize);
+                i = 3;
+            }
+        }
+        return songBytes;
     }
 
     public long getSongSize(String filename) throws RemoteException {
@@ -421,5 +458,9 @@ public class DFS {
 
     public FileJson searchFile(String filename) throws RemoteException {
         return this.readMetaData().getFile(filename);
+    }
+
+    public void vote(){
+
     }
 }

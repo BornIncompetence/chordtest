@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.io.*;
 import com.cecs.Models.Music;
+import com.cecs.Models.Transaction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -21,7 +22,7 @@ import com.google.gson.GsonBuilder;
  * Chord extends from UnicastRemoteObject to support RMI. It implements the
  * ChordMessageInterface
  */
-public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordMessageInterface {
+public class Chord extends java.rmi.server.UnicastRemoteObject implements AtomicCommitInterface, ChordMessageInterface {
     private static final long serialVersionUID = 6553087366009046155L;
 
     // Numbers of fingers
@@ -529,5 +530,35 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             e.printStackTrace();
         }
         return gson.toJson(filteredMusics);
+    }
+
+    @Override
+    public Boolean canCommit(Transaction trans) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void commit(Transaction trans) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void abort(Transaction trans) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public Boolean hasBeenCommitted(Transaction trans) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Boolean getDecision(Transaction trans) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
