@@ -464,10 +464,6 @@ public class DFS implements AtomicCommitInterface{
         return this.readMetaData().getFile(filename);
     }
 
-    public void vote(){
-
-    }
-
     public void pull(String filename, int pageIndex){
         String directoryFilePath = (String.valueOf(port) + "_dir");
         File f = new File(directoryFilePath);
@@ -510,9 +506,11 @@ public class DFS implements AtomicCommitInterface{
     @Override
     public void commit(Transaction trans) {
         if(trans.operation.equals("write")){
-
+            //Copy metadata of the old page
+            //delete the old page
+            //write the new page, copy the old metadata to the new page
         }else if(trans.operation.equals("delete")){
-
+            //delete the page
         }
         //forloop for each node that contains page
             //if timestamp of page is older than transaction, update the page with the directory, update the timestamp
