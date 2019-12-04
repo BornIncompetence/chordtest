@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.security.*;
 import java.time.LocalDateTime;
 
+import com.cecs.Models.Transaction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -32,7 +33,7 @@ import com.google.gson.GsonBuilder;
 } 
 */
 
-public class DFS {
+public class DFS implements AtomicCommitInterface{
 
     public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
         private ArrayList<Long> guids;
@@ -462,5 +463,50 @@ public class DFS {
 
     public void vote(){
 
+    }
+
+    public void pull(){
+
+    }
+    
+    public void push(String filename, String operation){
+        //pageindex = guid?
+        Transaction transactionToPush = new Transaction("YES", operation, filename, pageIndex)
+    }
+
+    @Override
+    public Boolean canCommit(Transaction trans) {
+        //find each node that contains the page
+        //tell each node to compare the timestamp of the page to the timestamp of the transaction
+        return null;
+    }
+
+    @Override
+    public void commit(Transaction trans) {
+        //forloop for each node that contains page
+            //if timestamp of page is older than transaction, update the page with the directory, update the timestamp
+
+    }
+
+    @Override
+    public void abort(Transaction trans) {
+        //forloop to check each node
+            //if change has been committed (check if the timestamp has been updated on a page)
+                //copy contents of uncommitted node (timestamp of page in that node is less than transaction) to this node
+
+    }
+
+    @Override
+    public Boolean hasBeenCommitted(Transaction trans) {
+        //forloop to check each node's page's timestamp and compare it to the transaction timestamp
+        //if page timestamp ==  transaction timestamp
+            //return true
+        return null;
+    }
+
+    @Override
+    public Boolean getDecision(Transaction trans) {
+        //for loop to ask each node to check their decision (canCommit?)
+        return null;
     }
 }
