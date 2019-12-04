@@ -37,23 +37,28 @@ public class MusicServices {
             var threads = new LinkedList<Thread>();
 
             for (var page : pages) {
-                long guid = page.getGuid();
-                ChordMessageInterface peer = dfs.getChord().locateSuccessor(guid);
-                threads.add(new Thread(() -> {
-                    try {
-                        String json = peer.search(guid, query);
-                        sem.acquire();
-                        musics.addAll(Arrays.asList(gson.fromJson(json, Music[].class)));
-                        sem.release();
-                    } catch (RemoteException e) {
-                        System.err.println("Error occurred while searching for song in chord");
-                    } catch (InterruptedException e) {
-                        System.err.println(e.getMessage());
+                ArrayList<Long> guids = page.getGuids();
+                for(int i = 0; i < guids.size(); i++){
+                    ChordMessageInterface peer = dfs.getChord().locateSuccessor(guids.get(i));
+                    Long guidOfPage = guids.get(i);
+                    if(peer != null){
+                        threads.add(new Thread(() -> {
+                            try {
+                                String json = peer.search(guidOfPage, query);
+                                sem.acquire();
+                                musics.addAll(Arrays.asList(gson.fromJson(json, Music[].class)));
+                                sem.release();
+                            } catch (RemoteException e) {
+                                System.err.println("Error occurred while searching for song in chord");
+                            } catch (InterruptedException e) {
+                                System.err.println(e.getMessage());
+                            }
+                        }));
+                        threads.getLast().start();
+                        i = 3;
                     }
-                }));
-                threads.getLast().start();
+                }
             }
-
             for (Thread t : threads) {
                 t.join();
             }
