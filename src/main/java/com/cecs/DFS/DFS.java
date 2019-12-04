@@ -342,6 +342,7 @@ public class DFS implements AtomicCommitInterface{
             ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
             if(peer != null){
                 rifs = peer.get(guidsOfPage.get(i));
+                pagesJson.readTS.set(i, now());
                 writeMetaData(metadata);
                 System.out.println(rifs);
                 i = 3;
