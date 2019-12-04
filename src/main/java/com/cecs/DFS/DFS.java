@@ -3,7 +3,10 @@ package com.cecs.DFS;
 import java.util.*;
 import java.nio.file.*;
 import java.rmi.RemoteException;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.*;
 import java.time.LocalDateTime;
@@ -38,9 +41,9 @@ public class DFS implements AtomicCommitInterface{
     public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
         private ArrayList<Long> guids;
         long size;
-        String createTS;
-        String readTS;
-        String writeTS;
+        public String createTS;
+        public String readTS;
+        public String writeTS;
         int referenceCount;
 
         public PagesJson(ArrayList<Long> guids, long size, String timestamp, int referenceCount) {
@@ -465,24 +468,52 @@ public class DFS implements AtomicCommitInterface{
 
     }
 
-    public void pull(){
-
+    public void pull(String filename, int pageIndex){
+        String directoryFilePath = (String.valueOf(port) + "_dir");
+        File f = new File(directoryFilePath);
+        try{
+            if(!f.exists()){
+                if(f.mkdir()){
+                    copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
+                }
+                else{
+                    System.out.println("Directory is not created");
+                }
+            }
+            copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
-    
-    public void push(String filename, String operation){
-        //pageindex = guid?
-        Transaction transactionToPush = new Transaction("YES", operation, filename, pageIndex)
+
+    public void push(String filename, int pageIndex, String operation) throws RemoteException {
+        Transaction transactionToPush = new Transaction(filename, pageIndex, operation);
+        if(canCommit(transactionToPush)){
+            commit(transactionToPush);
+        }else{
+            abort(transactionToPush);
+        }
     }
 
     @Override
-    public Boolean canCommit(Transaction trans) {
-        //find each node that contains the page
-        //tell each node to compare the timestamp of the page to the timestamp of the transaction
-        return null;
+    public Boolean canCommit(Transaction trans) throws RemoteException {
+        FilesJson metadata = this.readMetaData();
+
+        FileJson file = metadata.getFile(trans.fileName);
+
+        PagesJson pagesJson = file.pages.get(trans.pageIndex);
+        LocalDateTime transactionTS = trans.ts;
+        LocalDateTime lastReadTS = LocalDateTime.parse(pagesJson.readTS);
+        return lastReadTS.isBefore(transactionTS);
     }
 
     @Override
     public void commit(Transaction trans) {
+        if(trans.operation.equals("write")){
+
+        }else if(trans.operation.equals("delete")){
+
+        }
         //forloop for each node that contains page
             //if timestamp of page is older than transaction, update the page with the directory, update the timestamp
 
@@ -497,16 +528,35 @@ public class DFS implements AtomicCommitInterface{
     }
 
     @Override
-    public Boolean hasBeenCommitted(Transaction trans) {
-        //forloop to check each node's page's timestamp and compare it to the transaction timestamp
-        //if page timestamp ==  transaction timestamp
-            //return true
-        return null;
+    public Boolean hasBeenCommitted(Transaction trans) throws RemoteException {
+        FilesJson metadata = this.readMetaData();
+
+        FileJson file = metadata.getFile(trans.fileName);
+
+        PagesJson pagesJson = file.pages.get(trans.pageIndex);
+        LocalDateTime transactionTS = trans.ts;
+        LocalDateTime lastReadTS = LocalDateTime.parse(pagesJson.readTS);
+        return lastReadTS.isEqual(transactionTS);
     }
 
     @Override
     public Boolean getDecision(Transaction trans) {
         //for loop to ask each node to check their decision (canCommit?)
         return null;
+    }
+
+    public Boolean copyFileToTempDirectory(String filename, int pageIndex, String directory){
+        try{
+            RemoteInputFileStream rifs = this.read(filename, pageIndex);
+            byte[] buffer = new byte[rifs.available()];
+            File targetFile = new File(directory + "/" + filename + ".json");
+            OutputStream outStream = new FileOutputStream(targetFile);
+            outStream.write(buffer);
+            outStream.close();
+            return true;
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
     }
 }
