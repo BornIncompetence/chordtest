@@ -492,17 +492,24 @@ public class DFS implements AtomicCommitInterface{
             abort(transactionToPush);
         }
     }
-
+    /*
+    Checks to see if each node is allowed to commit by checking the read timestamp of each guid of each page
+    */
     @Override
     public Boolean canCommit(Transaction trans) throws RemoteException {
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(trans.fileName);
 
-        PagesJson pagesJson = file.pages.get(trans.pageIndex);
+        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
         LocalDateTime transactionTS = trans.ts;
-        LocalDateTime lastReadTS = LocalDateTime.parse(pagesJson.readTS);
-        return lastReadTS.isBefore(transactionTS);
+        for(int i = 0; i < pageOfFile.readTS.size(); i++){
+            LocalDateTime lastReadTS = LocalDateTime.parse(pageOfFile.readTS.get(i));
+            if(lastReadTS.isAfter(transactionTS)){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -533,10 +540,15 @@ public class DFS implements AtomicCommitInterface{
 
         FileJson file = metadata.getFile(trans.fileName);
 
-        PagesJson pagesJson = file.pages.get(trans.pageIndex);
+        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
         LocalDateTime transactionTS = trans.ts;
-        LocalDateTime lastReadTS = LocalDateTime.parse(pagesJson.readTS);
-        return lastReadTS.isEqual(transactionTS);
+        for(int i = 0; i < pageOfFile.readTS.size(); i++){
+            LocalDateTime lastReadTS = LocalDateTime.parse(pageOfFile.readTS.get(i));
+            if(!lastReadTS.isEqual(transactionTS)){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
