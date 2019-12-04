@@ -41,12 +41,12 @@ public class DFS implements AtomicCommitInterface{
     public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
         private ArrayList<Long> guids;
         long size;
-        public String createTS;
-        public String readTS;
-        public String writeTS;
+        public ArrayList<String> createTS;
+        public ArrayList<String> readTS;
+        public ArrayList<String> writeTS;
         int referenceCount;
 
-        public PagesJson(ArrayList<Long> guids, long size, String timestamp, int referenceCount) {
+        public PagesJson(ArrayList<Long> guids, long size, ArrayList<String> timestamp, int referenceCount) {
             this.guids = guids;
             this.size = size;
             this.createTS = timestamp;
@@ -309,7 +309,6 @@ public class DFS implements AtomicCommitInterface{
      * @param filename Name of the file
      */
     public void delete(String filename) throws RemoteException {
-        //TODO: add vote for consensus on transactions
         FilesJson metadata = this.readMetaData();
         for (var page : metadata.getFile(filename).pages) {
             ArrayList<Long> pageGuids = page.getGuids();
@@ -358,7 +357,6 @@ public class DFS implements AtomicCommitInterface{
      * @param data     RemoteInputStream.
      */
     public void append(String filename, RemoteInputFileStream data) throws RemoteException {
-        //TODO: Vote on consensus
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
@@ -371,14 +369,17 @@ public class DFS implements AtomicCommitInterface{
 
         // Add file to chord
         ArrayList<Long> fileGuids = new ArrayList<Long>();
+        ArrayList<String> timestamps = new ArrayList<String>();
+        String ts = now();
         for(int i = 0; i < 3; i++){
             long guidOfNewFile = md5(filename + i + now());
             fileGuids.add(guidOfNewFile);
+            timestamps.add(ts);
             ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
             nodeToHostFile.put(guidOfNewFile, data); // Can possibly stall the entire program
         }
 
-        PagesJson newPage = new PagesJson(fileGuids, data.available(), now(), 0);
+        PagesJson newPage = new PagesJson(fileGuids, data.available(), timestamps, 0);
         System.out.println("Adding file...");
         file.pages.add(newPage);
         writeMetaData(metadata);
