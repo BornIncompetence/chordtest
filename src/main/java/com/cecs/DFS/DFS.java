@@ -3,7 +3,10 @@ package com.cecs.DFS;
 import java.util.*;
 import java.nio.file.*;
 import java.rmi.RemoteException;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.*;
 import java.time.LocalDateTime;
@@ -38,12 +41,12 @@ public class DFS implements AtomicCommitInterface {
     public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
         private ArrayList<Long> guids;
         long size;
-        String createTS;
-        String readTS;
-        String writeTS;
+        public ArrayList<String> createTS;
+        public ArrayList<String> readTS;
+        public ArrayList<String> writeTS;
         int referenceCount;
 
-        public PagesJson(ArrayList<Long> guids, long size, String timestamp, int referenceCount) {
+        public PagesJson(ArrayList<Long> guids, long size, ArrayList<String> timestamp, int referenceCount) {
             this.guids = guids;
             this.size = size;
             this.createTS = timestamp;
@@ -306,7 +309,6 @@ public class DFS implements AtomicCommitInterface {
      * @param filename Name of the file
      */
     public void delete(String filename) throws RemoteException {
-        // TODO: add vote for consensus on transactions
         FilesJson metadata = this.readMetaData();
         for (var page : metadata.getFile(filename).pages) {
             for (var guid : page.guids) {
@@ -331,10 +333,12 @@ public class DFS implements AtomicCommitInterface {
         file.readTS = now();
 
         PagesJson pagesJson = file.pages.get(pageNumber);
-        for (var guid : pagesJson.guids) {
+        for (int i = 0; i < pagesJson.guids.size(); i++) {
+            var guid = pagesJson.guids.get(i);
             ChordMessageInterface peer = chord.locateSuccessor(guid);
             if (peer != null) {
-                RemoteInputFileStream rifs = peer.get(guid);
+                rifs = peer.get(guid);
+                pagesJson.readTS.set(i, now());
                 writeMetaData(metadata);
                 System.out.println(rifs);
                 return rifs;
@@ -350,7 +354,6 @@ public class DFS implements AtomicCommitInterface {
      * @param data     RemoteInputStream.
      */
     public void append(String filename, RemoteInputFileStream data) throws RemoteException {
-        // TODO: Vote on consensus
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
@@ -363,14 +366,17 @@ public class DFS implements AtomicCommitInterface {
 
         // Add file to chord
         ArrayList<Long> fileGuids = new ArrayList<Long>();
+        ArrayList<String> timestamps = new ArrayList<String>();
+        String ts = now();
         for (int i = 0; i < 3; i++) {
-            long guidOfNewFile = md5(filename + i + now());
+            long guidOfNewFile = md5(filename + i);
             fileGuids.add(guidOfNewFile);
+            timestamps.add(ts);
             ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
             nodeToHostFile.put(guidOfNewFile, data);
         }
 
-        PagesJson newPage = new PagesJson(fileGuids, data.available(), now(), 0);
+        PagesJson newPage = new PagesJson(fileGuids, data.available(), timestamps, 0);
         System.out.println("Adding file...");
         file.pages.add(newPage);
         writeMetaData(metadata);
@@ -451,33 +457,80 @@ public class DFS implements AtomicCommitInterface {
         return this.readMetaData().getFile(filename);
     }
 
-    public void vote() {
-
+    public void pull(String filename, int pageIndex) {
+        String directoryFilePath = (String.valueOf(port) + "_dir");
+        File f = new File(directoryFilePath);
+        try {
+            if (!f.exists()) {
+                if (f.mkdir()) {
+                    copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
+                } else {
+                    System.out.println("Directory is not created");
+                }
+            }
+            copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public void pull() {
-
+    public void push(String filename, int pageIndex, String operation) throws IOException {
+        Transaction transactionToPush = new Transaction(filename, pageIndex, operation);
+        if (canCommit(transactionToPush)) {
+            commit(transactionToPush);
+        } else {
+            abort(transactionToPush);
+        }
     }
 
-    public void push(String filename, String operation){
-        //pageindex = guid?
-        Transaction transactionToPush = new Transaction("YES", operation, filename, pageIndex)
+    /*
+     * Checks to see if each node is allowed to commit by checking the read
+     * timestamp of each guid of each page
+     */
+    @Override
+    public Boolean canCommit(Transaction trans) throws RemoteException {
+        FilesJson metadata = this.readMetaData();
+
+        FileJson file = metadata.getFile(trans.fileName);
+
+        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
+        LocalDateTime transactionTS = trans.ts;
+        for (int i = 0; i < pageOfFile.readTS.size(); i++) {
+            LocalDateTime lastReadTS = LocalDateTime.parse(pageOfFile.readTS.get(i));
+            if (lastReadTS.isAfter(transactionTS)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
-    public Boolean canCommit(Transaction trans) {
-        // find each node that contains the page
-        // tell each node to compare the timestamp of the page to the timestamp of the
-        // transaction
-        return null;
-    }
+    public void commit(Transaction trans) throws IOException {
+        String directoryFilePath = (String.valueOf(port) + "_dir");
+        FilesJson metadata = this.readMetaData();
+        FileJson file = metadata.getFile(trans.fileName);
+        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
+        RemoteInputFileStream rifs = new RemoteInputFileStream(directoryFilePath + "/" + trans.fileName + ".json");
+        file.size = file.size - pageOfFile.size;
+        file.size = file.size + rifs.available();
+        file.readTS = now();
+        file.writeTS = now();
+        file.compareAndSetMaxPageSize(rifs.available());
 
-    @Override
-    public void commit(Transaction trans) {
-        // forloop for each node that contains page
-        // if timestamp of page is older than transaction, update the page with the
-        // directory, update the timestamp
+        // Delete old file in chord, put new file in chord
+        String now = now();
+        for (int i = 0; i < pageOfFile.getGuids().size(); i++) {
+            long guidOfFile = md5(trans.fileName + i);
+            ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfFile);
+            nodeToHostFile.delete(guidOfFile); // Can possibly stall the entire program
 
+            pageOfFile.createTS.set(i, now); // Update the timestamps of guid
+            pageOfFile.readTS.set(i, now);
+            pageOfFile.writeTS.set(i, now);
+
+            nodeToHostFile.put(guidOfFile, rifs);
+        }
+        writeMetaData(metadata);
     }
 
     @Override
@@ -491,17 +544,40 @@ public class DFS implements AtomicCommitInterface {
     }
 
     @Override
-    public Boolean hasBeenCommitted(Transaction trans) {
-        // forloop to check each node's page's timestamp and compare it to the
-        // transaction timestamp
-        // if page timestamp == transaction timestamp
-        // return true
-        return null;
+    public Boolean hasBeenCommitted(Transaction trans) throws RemoteException {
+        FilesJson metadata = this.readMetaData();
+
+        FileJson file = metadata.getFile(trans.fileName);
+
+        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
+        LocalDateTime transactionTS = trans.ts;
+        for (int i = 0; i < pageOfFile.readTS.size(); i++) {
+            LocalDateTime lastReadTS = LocalDateTime.parse(pageOfFile.readTS.get(i));
+            if (!lastReadTS.isEqual(transactionTS)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public Boolean getDecision(Transaction trans) {
         // for loop to ask each node to check their decision (canCommit?)
         return null;
+    }
+
+    public Boolean copyFileToTempDirectory(String filename, int pageIndex, String directory) {
+        try {
+            RemoteInputFileStream rifs = this.read(filename, pageIndex);
+            byte[] buffer = new byte[rifs.available()];
+            File targetFile = new File(directory + "/" + filename + ".json");
+            OutputStream outStream = new FileOutputStream(targetFile);
+            outStream.write(buffer);
+            outStream.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

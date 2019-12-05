@@ -4,21 +4,16 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Transaction {
-    public enum Operation { WRITE, DELETE};
-    public enum Vote { YES, NO};
     Long TransactionId;
-    Vote vote;
-    Operation operation;
-    String fileName;
-    Long pageIndex;
-    LocalDateTime ts;
+    public String fileName;
+    public LocalDateTime ts;
+    public int pageIndex;
+    public String operation;
 
-    public Transaction(Vote vote, Operation operation, String filename, Long pageIndex){
+    public Transaction(String filename, int pageIndex, String Operation){
         this.TransactionId = UUID.randomUUID().getLeastSignificantBits();
-        this.vote = vote;
-        this.operation = operation;
         this.fileName = filename;
-        this.pageIndex = pageIndex;
         this.ts = LocalDateTime.now();
+        this.operation = Operation;
     }
 }
