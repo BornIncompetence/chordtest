@@ -373,7 +373,7 @@ public class DFS implements AtomicCommitInterface{
         ArrayList<String> timestamps = new ArrayList<String>();
         String ts = now();
         for(int i = 0; i < 3; i++){
-            long guidOfNewFile = md5(filename + i + now());
+            long guidOfNewFile = md5(filename + i);
             fileGuids.add(guidOfNewFile);
             timestamps.add(ts);
             ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
@@ -513,17 +513,33 @@ public class DFS implements AtomicCommitInterface{
     }
 
     @Override
-    public void commit(Transaction trans) {
-        if(trans.operation.equals("write")){
-            //Copy metadata of the old page
-            //delete the old page
-            //write the new page, copy the old metadata to the new page
-        }else if(trans.operation.equals("delete")){
-            //delete the page
-        }
-        //forloop for each node that contains page
-            //if timestamp of page is older than transaction, update the page with the directory, update the timestamp
+    public void commit(Transaction trans) throws IOException {
+        String directoryFilePath = (String.valueOf(port) + "_dir");
+        FilesJson metadata = this.readMetaData();
+        FileJson file = metadata.getFile(trans.fileName);
+        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
+        RemoteInputFileStream rifs = new RemoteInputFileStream(directoryFilePath + "/" + trans.fileName + ".json");
+        file.size = file.size - pageOfFile.size;
+        file.size = file.size + rifs.available();
+        file.readTS = now();
+        file.writeTS = now();
+        file.compareAndSetMaxPageSize(rifs.available());
 
+        // Delete old file in chord, put new file in chord
+
+        String now = now();
+        for(int i = 0; i < pageOfFile.getGuids().size(); i++){
+            long guidOfFile = md5(trans.fileName + i);
+            ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfFile);
+            nodeToHostFile.delete(guidOfFile); // Can possibly stall the entire program
+            
+            pageOfFile.createTS.set(i, now);
+            pageOfFile.readTS.set(i, now);
+            pageOfFile.writeTS.set(i, now);
+
+            nodeToHostFile.put(guidOfFile, rifs);
+        }
+        writeMetaData(metadata);
     }
 
     @Override
