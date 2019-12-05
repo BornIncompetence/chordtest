@@ -37,14 +37,12 @@ public class MusicServices {
             var threads = new LinkedList<Thread>();
 
             for (var page : pages) {
-                ArrayList<Long> guids = page.getGuids();
-                for(int i = 0; i < guids.size(); i++){
-                    ChordMessageInterface peer = dfs.getChord().locateSuccessor(guids.get(i));
-                    Long guidOfPage = guids.get(i);
-                    if(peer != null){
+                for (var guid : page.getGuids()) {
+                    ChordMessageInterface peer = dfs.getChord().locateSuccessor(guid);
+                    if (peer != null) {
                         threads.add(new Thread(() -> {
                             try {
-                                String json = peer.search(guidOfPage, query);
+                                String json = peer.search(guid, query);
                                 sem.acquire();
                                 musics.addAll(Arrays.asList(gson.fromJson(json, Music[].class)));
                                 sem.release();
@@ -54,11 +52,15 @@ public class MusicServices {
                                 System.err.println(e.getMessage());
                             }
                         }));
-                        threads.getLast().start();
-                        i = 3;
+                        break;
                     }
                 }
             }
+
+            for (Thread t : threads) {
+                t.start();
+            }
+
             for (Thread t : threads) {
                 t.join();
             }

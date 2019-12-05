@@ -33,7 +33,7 @@ import com.google.gson.GsonBuilder;
 } 
 */
 
-public class DFS implements AtomicCommitInterface{
+public class DFS implements AtomicCommitInterface {
 
     public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
         private ArrayList<Long> guids;
@@ -306,14 +306,11 @@ public class DFS implements AtomicCommitInterface{
      * @param filename Name of the file
      */
     public void delete(String filename) throws RemoteException {
-        //TODO: add vote for consensus on transactions
+        // TODO: add vote for consensus on transactions
         FilesJson metadata = this.readMetaData();
         for (var page : metadata.getFile(filename).pages) {
-            ArrayList<Long> pageGuids = page.getGuids();
-            for(int i = 0; i < pageGuids.size(); i++){
-                long deleteGuid = pageGuids.get(i);
-                ChordMessageInterface peer = chord.locateSuccessor(deleteGuid);
-                peer.delete(deleteGuid);
+            for (var guid : page.guids) {
+                chord.locateSuccessor(guid).delete(guid);
             }
         }
         metadata.removeFile(filename);
@@ -328,24 +325,22 @@ public class DFS implements AtomicCommitInterface{
      * @throws RemoteException
      */
     public RemoteInputFileStream read(String filename, int pageNumber) throws RemoteException {
-        RemoteInputFileStream rifs = null;
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
         file.readTS = now();
 
         PagesJson pagesJson = file.pages.get(pageNumber);
-        ArrayList<Long> guidsOfPage = pagesJson.guids;
-        for(int i = 0; i < guidsOfPage.size(); i++){
-            ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
-            if(peer != null){
-                rifs = peer.get(guidsOfPage.get(i));
+        for (var guid : pagesJson.guids) {
+            ChordMessageInterface peer = chord.locateSuccessor(guid);
+            if (peer != null) {
+                RemoteInputFileStream rifs = peer.get(guid);
                 writeMetaData(metadata);
                 System.out.println(rifs);
-                i = 3;
+                return rifs;
             }
         }
-        return rifs;
+        return null;
     }
 
     /**
@@ -355,7 +350,7 @@ public class DFS implements AtomicCommitInterface{
      * @param data     RemoteInputStream.
      */
     public void append(String filename, RemoteInputFileStream data) throws RemoteException {
-        //TODO: Vote on consensus
+        // TODO: Vote on consensus
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
@@ -368,11 +363,11 @@ public class DFS implements AtomicCommitInterface{
 
         // Add file to chord
         ArrayList<Long> fileGuids = new ArrayList<Long>();
-        for(int i = 0; i < 3; i++){
+        for (int i = 0; i < 3; i++) {
             long guidOfNewFile = md5(filename + i + now());
             fileGuids.add(guidOfNewFile);
             ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
-            nodeToHostFile.put(guidOfNewFile, data); // Can possibly stall the entire program
+            nodeToHostFile.put(guidOfNewFile, data);
         }
 
         PagesJson newPage = new PagesJson(fileGuids, data.available(), now(), 0);
@@ -388,25 +383,22 @@ public class DFS implements AtomicCommitInterface{
      * @return First index of the pages in the file
      */
     public RemoteInputFileStream head(String filename) throws RemoteException {
-        RemoteInputFileStream rifs = null;
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
         file.readTS = now();
-
         PagesJson pagesJson = file.pages.get(0);
 
-        ArrayList<Long> guidsOfPage = pagesJson.guids;
-        for(int i = 0; i < guidsOfPage.size(); i++){
-            ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
-            if(peer != null){
-                rifs = peer.get(guidsOfPage.get(i));
+        for (var guid : pagesJson.guids) {
+            ChordMessageInterface peer = chord.locateSuccessor(guid);
+            if (peer != null) {
+                RemoteInputFileStream rifs = peer.get(guid);
                 writeMetaData(metadata);
                 System.out.println(rifs);
-                i = 3;
+                return rifs;
             }
         }
-        return rifs;
+        return null;
     }
 
     /**
@@ -416,24 +408,22 @@ public class DFS implements AtomicCommitInterface{
      * @return Last index of the pages in the file
      */
     public RemoteInputFileStream tail(String filename) throws RemoteException {
-        RemoteInputFileStream rifs = null;
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
         file.readTS = now();
         PagesJson pagesJson = file.pages.get(file.pages.size() - 1);
 
-        ArrayList<Long> guidsOfPage = pagesJson.guids;
-        for(int i = 0; i < guidsOfPage.size(); i++){
-            ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
-            if(peer != null){
-                rifs = peer.get(guidsOfPage.get(i));
+        for (var guid : pagesJson.guids) {
+            ChordMessageInterface peer = chord.locateSuccessor(guid);
+            if (peer != null) {
+                RemoteInputFileStream rifs = peer.get(guid);
                 writeMetaData(metadata);
                 System.out.println(rifs);
-                i = 3;
+                return rifs;
             }
         }
-        return rifs;
+        return null;
     }
 
     public int getPageFilesize(String filename) throws RemoteException {
@@ -443,9 +433,9 @@ public class DFS implements AtomicCommitInterface{
     public byte[] getSong(String filename, long offset, int fragmentSize) throws RemoteException {
         byte[] songBytes = null;
         ArrayList<Long> guidsOfPage = this.readMetaData().getFile(filename).pages.get(0).guids;
-        for(int i = 0; i < guidsOfPage.size(); i++){
+        for (int i = 0; i < guidsOfPage.size(); i++) {
             ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
-            if(peer != null){
+            if (peer != null) {
                 songBytes = peer.get(guidsOfPage.get(i), offset, fragmentSize);
                 i = 3;
             }
@@ -461,14 +451,14 @@ public class DFS implements AtomicCommitInterface{
         return this.readMetaData().getFile(filename);
     }
 
-    public void vote(){
+    public void vote() {
 
     }
 
-    public void pull(){
+    public void pull() {
 
     }
-    
+
     public void push(String filename, String operation){
         //pageindex = guid?
         Transaction transactionToPush = new Transaction("YES", operation, filename, pageIndex)
@@ -476,37 +466,42 @@ public class DFS implements AtomicCommitInterface{
 
     @Override
     public Boolean canCommit(Transaction trans) {
-        //find each node that contains the page
-        //tell each node to compare the timestamp of the page to the timestamp of the transaction
+        // find each node that contains the page
+        // tell each node to compare the timestamp of the page to the timestamp of the
+        // transaction
         return null;
     }
 
     @Override
     public void commit(Transaction trans) {
-        //forloop for each node that contains page
-            //if timestamp of page is older than transaction, update the page with the directory, update the timestamp
+        // forloop for each node that contains page
+        // if timestamp of page is older than transaction, update the page with the
+        // directory, update the timestamp
 
     }
 
     @Override
     public void abort(Transaction trans) {
-        //forloop to check each node
-            //if change has been committed (check if the timestamp has been updated on a page)
-                //copy contents of uncommitted node (timestamp of page in that node is less than transaction) to this node
+        // forloop to check each node
+        // if change has been committed (check if the timestamp has been updated on a
+        // page)
+        // copy contents of uncommitted node (timestamp of page in that node is less
+        // than transaction) to this node
 
     }
 
     @Override
     public Boolean hasBeenCommitted(Transaction trans) {
-        //forloop to check each node's page's timestamp and compare it to the transaction timestamp
-        //if page timestamp ==  transaction timestamp
-            //return true
+        // forloop to check each node's page's timestamp and compare it to the
+        // transaction timestamp
+        // if page timestamp == transaction timestamp
+        // return true
         return null;
     }
 
     @Override
     public Boolean getDecision(Transaction trans) {
-        //for loop to ask each node to check their decision (canCommit?)
+        // for loop to ask each node to check their decision (canCommit?)
         return null;
     }
 }
