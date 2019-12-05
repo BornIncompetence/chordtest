@@ -337,7 +337,7 @@ public class DFS implements AtomicCommitInterface {
             var guid = pagesJson.guids.get(i);
             ChordMessageInterface peer = chord.locateSuccessor(guid);
             if (peer != null) {
-                rifs = peer.get(guid);
+                RemoteInputFileStream rifs = peer.get(guid);
                 pagesJson.readTS.set(i, now());
                 writeMetaData(metadata);
                 System.out.println(rifs);
