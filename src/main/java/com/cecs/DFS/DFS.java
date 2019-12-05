@@ -484,7 +484,7 @@ public class DFS implements AtomicCommitInterface{
         }
     }
 
-    public void push(String filename, int pageIndex, String operation) throws RemoteException {
+    public void push(String filename, int pageIndex, String operation) throws IOException {
         Transaction transactionToPush = new Transaction(filename, pageIndex, operation);
         if(canCommit(transactionToPush)){
             commit(transactionToPush);
@@ -526,14 +526,13 @@ public class DFS implements AtomicCommitInterface{
         file.compareAndSetMaxPageSize(rifs.available());
 
         // Delete old file in chord, put new file in chord
-
         String now = now();
         for(int i = 0; i < pageOfFile.getGuids().size(); i++){
             long guidOfFile = md5(trans.fileName + i);
             ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfFile);
             nodeToHostFile.delete(guidOfFile); // Can possibly stall the entire program
             
-            pageOfFile.createTS.set(i, now);
+            pageOfFile.createTS.set(i, now); //Update the timestamps of guid
             pageOfFile.readTS.set(i, now);
             pageOfFile.writeTS.set(i, now);
 
