@@ -1,10 +1,13 @@
 package com.cecs.DFS;
 
 import java.util.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.rmi.RemoteException;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -467,12 +470,17 @@ public class DFS implements AtomicCommitInterface{
     }
 
     public void pull(String filename, int pageIndex){
+        Transaction transactionToPull = new Transaction(filename, pageIndex);
         String directoryFilePath = (String.valueOf(port) + "_dir");
         File f = new File(directoryFilePath);
         try{
             if(!f.exists()){
                 if(f.mkdir()){
                     copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
+                    var transactionJson = gson.toJson(transactionToPull);
+                    var writer = new FileWriter(new File("transaction.json", directoryFilePath));
+                    writer.write(transactionJson);
+                    writer.close();
                 }
                 else{
                     System.out.println("Directory is not created");
@@ -484,12 +492,15 @@ public class DFS implements AtomicCommitInterface{
         }
     }
 
-    public void push(String filename, int pageIndex, String operation) throws IOException {
-        Transaction transactionToPush = new Transaction(filename, pageIndex, operation);
+    public void push() throws IOException {
+        var file = new File("transaction.json");
+        var reader = new FileReader(file, StandardCharsets.UTF_8);
+        Transaction transactionToPush = gson.fromJson(reader, Transaction.class);
         if(canCommit(transactionToPush)){
             commit(transactionToPush);
+            System.out.println("Push Successful");
         }else{
-            abort(transactionToPush);
+            System.out.println("Unable to push, latest pull is older than age of file");
         }
     }
     /*
@@ -539,37 +550,6 @@ public class DFS implements AtomicCommitInterface{
             nodeToHostFile.put(guidOfFile, rifs);
         }
         writeMetaData(metadata);
-    }
-
-    @Override
-    public void abort(Transaction trans) {
-        //forloop to check each node
-            //if change has been committed (check if the timestamp has been updated on a page)
-                //copy contents of uncommitted node (timestamp of page in that node is less than transaction) to this node
-
-    }
-
-    @Override
-    public Boolean hasBeenCommitted(Transaction trans) throws RemoteException {
-        FilesJson metadata = this.readMetaData();
-
-        FileJson file = metadata.getFile(trans.fileName);
-
-        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
-        LocalDateTime transactionTS = trans.ts;
-        for(int i = 0; i < pageOfFile.readTS.size(); i++){
-            LocalDateTime lastReadTS = LocalDateTime.parse(pageOfFile.readTS.get(i));
-            if(!lastReadTS.isEqual(transactionTS)){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public Boolean getDecision(Transaction trans) {
-        //for loop to ask each node to check their decision (canCommit?)
-        return null;
     }
 
     public Boolean copyFileToTempDirectory(String filename, int pageIndex, String directory){

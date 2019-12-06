@@ -8,12 +8,10 @@ public class Transaction {
     public String fileName;
     public LocalDateTime ts;
     public int pageIndex;
-    public String operation;
 
-    public Transaction(String filename, int pageIndex, String Operation){
+    public Transaction(String filename, int pageIndex){
         this.TransactionId = UUID.randomUUID().getLeastSignificantBits();
         this.fileName = filename;
         this.ts = LocalDateTime.now();
-        this.operation = Operation;
     }
 }

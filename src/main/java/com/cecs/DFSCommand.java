@@ -103,10 +103,10 @@ public final class DFSCommand {
                 }
             }
             if (args[0].equals("push")){
-                
+                dfs.push();
             }
             if (args[0].equals("pull")){
-
+                dfs.pull(args[1], Integer.parseInt(args[2]));
             }
             System.out.print("> ");
             System.out.flush();
