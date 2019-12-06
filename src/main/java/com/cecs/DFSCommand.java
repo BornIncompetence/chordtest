@@ -102,11 +102,11 @@ public final class DFSCommand {
                     System.err.println("Could not parse Integer from " + args[1]);
                 }
             }
-            if (args[0].equals("push")){
-                dfs.push();
-            }
             if (args[0].equals("pull")){
                 dfs.pull(args[1], Integer.parseInt(args[2]));
+            }
+            if (args[0].equals("push")){
+                dfs.push();
             }
             System.out.print("> ");
             System.out.flush();
