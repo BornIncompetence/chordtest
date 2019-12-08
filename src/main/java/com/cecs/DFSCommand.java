@@ -63,6 +63,7 @@ public final class DFSCommand {
             }
             if (args[0].equals("append") && args.length > 2) {
                 // Check if it is a directory
+                /*
                 var file = new File(args[2]);
                 if (file.exists()) {
                     if (file.isDirectory()) {
@@ -82,6 +83,9 @@ public final class DFSCommand {
                         System.out.println("Page added");
                     }
                 }
+                */
+                dfs.append(args[1], args[2]);
+                System.out.println("page added");
             }
             if (args[0].equals("move") && args.length > 2) {
                 dfs.move(args[1], args[2]);

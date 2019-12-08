@@ -39,7 +39,7 @@ import com.google.gson.GsonBuilder;
 } 
 */
 
-public class DFS implements AtomicCommitInterface{
+public class DFS implements AtomicCommitInterface {
 
     public class PagesJson { // This might be the class that holds the pages of the music.json or users.json?
         private ArrayList<Long> guids;
@@ -315,7 +315,7 @@ public class DFS implements AtomicCommitInterface{
         FilesJson metadata = this.readMetaData();
         for (var page : metadata.getFile(filename).pages) {
             ArrayList<Long> pageGuids = page.getGuids();
-            for(int i = 0; i < pageGuids.size(); i++){
+            for (int i = 0; i < pageGuids.size(); i++) {
                 long deleteGuid = pageGuids.get(i);
                 ChordMessageInterface peer = chord.locateSuccessor(deleteGuid);
                 peer.delete(deleteGuid);
@@ -341,9 +341,9 @@ public class DFS implements AtomicCommitInterface{
 
         PagesJson pagesJson = file.pages.get(pageNumber);
         ArrayList<Long> guidsOfPage = pagesJson.guids;
-        for(int i = 0; i < guidsOfPage.size(); i++){
+        for (int i = 0; i < guidsOfPage.size(); i++) {
             ChordMessageInterface peer = chord.locateSuccessor(guidsOfPage.get(i));
-            if(peer != null){
+            if (peer != null) {
                 rifs = peer.get(guidsOfPage.get(i));
                 pagesJson.readTS.set(i, now());
                 writeMetaData(metadata);
@@ -359,34 +359,42 @@ public class DFS implements AtomicCommitInterface{
      *
      * @param filename Name of the file
      * @param data     RemoteInputStream.
+     * @throws IOException
      */
-    public void append(String filename, RemoteInputFileStream data) throws RemoteException {
+    public void append(String filename, String filepath) throws IOException {
+        
         FilesJson metadata = this.readMetaData();
 
         FileJson file = metadata.getFile(filename);
 
-        // Update metadata
-        file.size += data.available();
-        file.readTS = now();
-        file.writeTS = now();
-        file.compareAndSetMaxPageSize(data.available());
+        
 
         // Add file to chord
         ArrayList<Long> fileGuids = new ArrayList<Long>();
         ArrayList<String> timestamps = new ArrayList<String>();
         String ts = now();
-        for(int i = 0; i < 3; i++){
-            long guidOfNewFile = md5(filename + i);
+        for (int i = 0; i < 3; i++) {
+            RemoteInputFileStream rifs = new RemoteInputFileStream(filepath);
+            long guidOfNewFile = md5(filename + i + now());
+            System.out.println("Page created with guid: " + guidOfNewFile);
             fileGuids.add(guidOfNewFile);
             timestamps.add(ts);
             ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfNewFile);
-            nodeToHostFile.put(guidOfNewFile, data); // Can possibly stall the entire program
+            System.out.println("Adding file...");
+            nodeToHostFile.put(guidOfNewFile, rifs);            
         }
+        // Update metadata
+        RemoteInputFileStream rifs = new RemoteInputFileStream(filepath);
+        file.size += rifs.available();
+        file.readTS = now();
+        file.writeTS = now();
+        file.compareAndSetMaxPageSize(rifs.available());
 
-        PagesJson newPage = new PagesJson(fileGuids, data.available(), timestamps, 0);
-        System.out.println("Adding file...");
+        PagesJson newPage = new PagesJson(fileGuids, rifs.available(), timestamps, 0);
+        
         file.pages.add(newPage);
         writeMetaData(metadata);
+        rifs.close();
     }
 
     /**
@@ -478,7 +486,7 @@ public class DFS implements AtomicCommitInterface{
                 if(f.mkdir()){
                     copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
                     var transactionJson = gson.toJson(transactionToPull);
-                    var writer = new FileWriter(new File("transaction.json", directoryFilePath));
+                    var writer = new FileWriter(new File(directoryFilePath, "transaction.json"));
                     writer.write(transactionJson);
                     writer.close();
                 }
@@ -513,7 +521,7 @@ public class DFS implements AtomicCommitInterface{
         FileJson file = metadata.getFile(trans.fileName);
 
         PagesJson pageOfFile = file.pages.get(trans.pageIndex);
-        LocalDateTime transactionTS = trans.ts;
+        LocalDateTime transactionTS = LocalDateTime.parse(trans.ts);
         for(int i = 0; i < pageOfFile.readTS.size(); i++){
             LocalDateTime lastReadTS = LocalDateTime.parse(pageOfFile.readTS.get(i));
             if(lastReadTS.isAfter(transactionTS)){
