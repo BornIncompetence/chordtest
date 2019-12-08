@@ -362,12 +362,8 @@ public class DFS implements AtomicCommitInterface {
      * @throws IOException
      */
     public void append(String filename, String filepath) throws IOException {
-        
         FilesJson metadata = this.readMetaData();
-
         FileJson file = metadata.getFile(filename);
-
-        
 
         // Add file to chord
         ArrayList<Long> fileGuids = new ArrayList<Long>();
@@ -478,13 +474,13 @@ public class DFS implements AtomicCommitInterface {
     }
 
     public void pull(String filename, int pageIndex){
-        Transaction transactionToPull = new Transaction(filename, pageIndex);
         String directoryFilePath = (String.valueOf(port) + "_dir");
         File f = new File(directoryFilePath);
         try{
             if(!f.exists()){
                 if(f.mkdir()){
                     copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
+                    Transaction transactionToPull = new Transaction(filename, pageIndex);
                     var transactionJson = gson.toJson(transactionToPull);
                     var writer = new FileWriter(new File(directoryFilePath, "transaction.json"));
                     writer.write(transactionJson);
@@ -495,13 +491,19 @@ public class DFS implements AtomicCommitInterface {
                 }
             }
             copyFileToTempDirectory(filename, pageIndex, directoryFilePath);
+            Transaction transactionToPull = new Transaction(filename, pageIndex);
+            var transactionJson = gson.toJson(transactionToPull);
+            var writer = new FileWriter(new File(directoryFilePath, "transaction.json"));
+            writer.write(transactionJson);
+            writer.close();
         }catch(Exception e){
             e.printStackTrace();
         }
     }
 
     public void push() throws IOException {
-        var file = new File("transaction.json");
+        String directoryFilePath = (String.valueOf(port) + "_dir");
+        var file = new File(directoryFilePath + "/transaction.json");
         var reader = new FileReader(file, StandardCharsets.UTF_8);
         Transaction transactionToPush = gson.fromJson(reader, Transaction.class);
         if(canCommit(transactionToPush)){
@@ -536,38 +538,50 @@ public class DFS implements AtomicCommitInterface {
         String directoryFilePath = (String.valueOf(port) + "_dir");
         FilesJson metadata = this.readMetaData();
         FileJson file = metadata.getFile(trans.fileName);
-        PagesJson pageOfFile = file.pages.get(trans.pageIndex);
-        RemoteInputFileStream rifs = new RemoteInputFileStream(directoryFilePath + "/" + trans.fileName + ".json");
-        file.size = file.size - pageOfFile.size;
+        file.pages.get(trans.pageIndex);
+        // Delete old file in chord
+        for(int i = 0; i < file.pages.get(trans.pageIndex).guids.size(); i++){
+            ChordMessageInterface nodeToHostFile = chord.locateSuccessor(file.pages.get(trans.pageIndex).guids.get(i));
+            nodeToHostFile.delete(file.pages.get(trans.pageIndex).guids.get(i));
+        }
+        file.pages.get(trans.pageIndex).guids.clear();
+        // Put new file in chord
+        String now = now();
+        for(int i = 0; i < 3; i++){
+            RemoteInputFileStream rifs = new RemoteInputFileStream(directoryFilePath + "/" + trans.fileName);
+            Long guidOfFile = md5(trans.fileName + i + now());
+            System.out.println("Page created with guid: " + guidOfFile);
+            ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfFile);
+            file.pages.get(trans.pageIndex).guids.add(guidOfFile);
+            file.pages.get(trans.pageIndex).createTS.set(i, now); //Update the timestamps of guid
+            file.pages.get(trans.pageIndex).readTS.set(i, now);
+            file.pages.get(trans.pageIndex).writeTS.set(i, now);
+            nodeToHostFile.put(guidOfFile, rifs);
+        }
+        RemoteInputFileStream rifs = new RemoteInputFileStream(directoryFilePath + "/" + trans.fileName);
+        file.size = file.size - file.pages.get(trans.pageIndex).size;
         file.size = file.size + rifs.available();
         file.readTS = now();
         file.writeTS = now();
         file.compareAndSetMaxPageSize(rifs.available());
-
-        // Delete old file in chord, put new file in chord
-        String now = now();
-        for(int i = 0; i < pageOfFile.getGuids().size(); i++){
-            long guidOfFile = md5(trans.fileName + i);
-            ChordMessageInterface nodeToHostFile = chord.locateSuccessor(guidOfFile);
-            nodeToHostFile.delete(guidOfFile); // Can possibly stall the entire program
-            
-            pageOfFile.createTS.set(i, now); //Update the timestamps of guid
-            pageOfFile.readTS.set(i, now);
-            pageOfFile.writeTS.set(i, now);
-
-            nodeToHostFile.put(guidOfFile, rifs);
-        }
+        rifs.close();
         writeMetaData(metadata);
     }
 
     public Boolean copyFileToTempDirectory(String filename, int pageIndex, String directory){
         try{
             RemoteInputFileStream rifs = this.read(filename, pageIndex);
-            byte[] buffer = new byte[rifs.available()];
-            File targetFile = new File(directory + "/" + filename + ".json");
-            OutputStream outStream = new FileOutputStream(targetFile);
-            outStream.write(buffer);
-            outStream.close();
+            File targetFile = new File(directory + "/" + filename);
+            rifs.connect();
+            try{
+                OutputStream outStream = new FileOutputStream(targetFile);
+                while(rifs.available() > 0){
+                    outStream.write(rifs.read());
+                }
+                outStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             return true;
         } catch (Exception e){
             e.printStackTrace();

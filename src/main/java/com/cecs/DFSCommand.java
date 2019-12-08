@@ -27,10 +27,12 @@ public final class DFSCommand {
         for (String line = ""; !line.equals("quit"); line = buffer.readLine()) {
             String[] args = line.split("\\s");
             if (args[0].equals("join") && args.length > 1) {
-                try {
-                    dfs.join("127.0.0.1", Integer.parseInt(args[1]));
-                } catch (NumberFormatException e) {
-                    System.err.println("Could not parse Integer from " + args[1]);
+                if(p != Integer.parseInt(args[1])){
+                    try {
+                        dfs.join("127.0.0.1", Integer.parseInt(args[1]));
+                    } catch (NumberFormatException e) {
+                        System.err.println("Could not parse Integer from " + args[1]);
+                    }
                 }
             }
             if (args[0].equals("print")) {
@@ -107,7 +109,9 @@ public final class DFSCommand {
                 }
             }
             if (args[0].equals("pull")){
-                dfs.pull(args[1], Integer.parseInt(args[2]));
+                if(args.length > 1){
+                    dfs.pull(args[1], Integer.parseInt(args[2]));
+                }
             }
             if (args[0].equals("push")){
                 dfs.push();
